@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retzn Tools</title>
+<meta name="description" content="Retzn が作って配っているアプリの一覧です。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --ink: #172030;
+    --muted: #586377;
+    --line: #d3d9e3;
+    --accent: #0b7480;
+    --accent-ink: #ffffff;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10151e;
+      --surface: #182030;
+      --ink: #e6ebf2;
+      --muted: #97a2b5;
+      --line: #2a3446;
+      --accent: #4cc3cf;
+      --accent-ink: #0c1a1d;
+      color-scheme: dark;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    line-height: 1.8;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 72px 0 40px; }
+  .mark {
+    font-weight: 900;
+    font-size: clamp(3rem, 12vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+  .mark span { display: block; color: var(--accent); }
+  .intro { margin: 24px 0 0; color: var(--muted); max-width: 34em; }
+
+  main { padding-bottom: 64px; }
+  .apps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    gap: 8px 32px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .app h2 { margin: 0; font-size: 1.6rem; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
+  .app .tags { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+  .app .tags li {
+    font-size: 0.8rem; padding: 1px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--surface);
+  }
+  .app p { margin: 0 0 16px; }
+  .app a.more {
+    display: inline-block; padding: 8px 18px; border-radius: 6px;
+    background: var(--accent); color: var(--accent-ink);
+    font-weight: 700; text-decoration: none;
+  }
+  .app a.more:hover { filter: brightness(1.08); }
+  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .app.soon a.more { background: transparent; color: var(--muted); border: 1px dashed var(--line); pointer-events: none; }
+
+  footer { padding: 24px 0 48px; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 640px) {
+    header { padding: 48px 0 28px; }
+    .app { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="mark">Retzn<span>Tools</span></h1>
+      <p class="intro">Retzn が作って無料で配っているアプリの一覧です。使い方やダウンロードは、それぞれのページにまとめています。</p>
+    </header>
+
+    <main>
+      <ul class="apps" id="apps"></ul>
+    </main>
+
+    <footer>&copy; 2026 Retzn</footer>
+  </div>
+
+<script>
+  // ===== ここを編集するとアプリを追加・変更できます =====
+  // name : アプリ名
+  // desc : 短い説明（1〜2文）
+  // tags : 小さなラベル（いくつでも）
+  // url  : 説明ページへのリンク（同じリポジトリ内なら "フォルダ名/" でOK）
+  // soon : true にすると「準備中」表示になります
+  const APPS = [
+    {
+      name: "Kotobareach",
+      desc: "話した日本語は英語に、相手の英語は日本語に訳して、手元のスマホやタブレットに字幕で表示します。ゲームのボイスチャットで英語のやり取りを助けます。",
+      tags: ["Windows", "無料", "翻訳字幕"],
+      url: "https://retzrs-ops.github.io/Kotobareach-release/"
+    },
+    {
+      name: "Kotobagraph",
+      desc: "音声や動画のファイルから文字起こしを作ります。マイクの声から議事録を自動で作る機能もあります。処理はすべてパソコンの中で行い、音声は外に送りません。",
+      tags: ["Windows", "無料", "文字起こし"],
+      url: "https://retzrs-ops.github.io/Kotobagraph-release/"
+    },
+    {
+      name: "VAO",
+      desc: "画面の文章を読むだけで、マイクの音量・雑音・声の聞きやすさを自動で整える OBS Studio 用のフィルタです。配信の音で悩んでいる人に。",
+      tags: ["Windows", "無料", "OBS"],
+      url: "https://retzrs-ops.github.io/VAO/"
+    }
+  ];
+  // ===================================================
+
+  const list = document.getElementById("apps");
+  for (const app of APPS) {
+    const li = document.createElement("li");
+    li.className = "app" + (app.soon ? " soon" : "");
+
+    const head = document.createElement("div");
+    const h2 = document.createElement("h2");
+    h2.textContent = app.name;
+    head.appendChild(h2);
+    if (app.tags && app.tags.length) {
+      const tags = document.createElement("ul");
+      tags.className = "tags";
+      for (const t of app.tags) {
+        const tag = document.createElement("li");
+        tag.textContent = t;
+        tags.appendChild(tag);
+      }
+      head.appendChild(tags);
+    }
+
+    const body = document.createElement("div");
+    const p = document.createElement("p");
+    p.textContent = app.desc;
+    const a = document.createElement("a");
+    a.className = "more";
+    if (app.soon) {
+      a.textContent = "準備中";
+      a.setAttribute("aria-disabled", "true");
+    } else {
+      a.textContent = "説明ページを見る";
+      a.href = app.url;
+    }
+    body.append(p, a);
+
+    li.append(head, body);
+    list.appendChild(li);
+  }
+</script>
+</body>
+</html>
