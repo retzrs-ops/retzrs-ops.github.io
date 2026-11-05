@@ -107,6 +107,7 @@
   // desc : 短い説明（1〜2文）
   // tags : 小さなラベル（いくつでも）
   // url  : 説明ページへのリンク（同じリポジトリ内なら "フォルダ名/" でOK）
+  // label: リンクの文字（省略すると「説明ページを見る」）
   // soon : true にすると「準備中」表示になります
   const APPS = [
     {
@@ -137,7 +138,8 @@
       name: "こえスペクトル",
       desc: "マイクで録った声から、スペクトログラムと声の特徴（かすれ・ゆれ・ビブラートなど）を表示します。処理はすべてブラウザの中で行い、録音は外に送りません。",
       tags: ["ブラウザ", "無料", "声の分析"],
-      url: "https://retzrs-ops.github.io/voice-spectrum/"
+      url: "https://retzrs-ops.github.io/voice-spectrum/",
+      label: "こえスペクトルを使う"
     }
   ];
   // ===================================================
@@ -171,7 +173,7 @@
       a.textContent = "準備中";
       a.setAttribute("aria-disabled", "true");
     } else {
-      a.textContent = "説明ページを見る";
+      a.textContent = app.label || "説明ページを見る";
       a.href = app.url;
     }
     body.append(p, a);
