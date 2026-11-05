@@ -1449,6 +1449,9 @@ function xWeight(text) {
   return w;
 }
 const X_LIMIT = 280, X_LINK = 24;
+const TOP_URL = 'https://retzrs-ops.github.io/';
+// 本文中のURLもXでは23文字として数えられる
+const topUrlSave = text => text.includes(TOP_URL) ? TOP_URL.length - 23 : 0;
 
 function buildShareText(typeName, style, findingsResult, title) {
   const h = results.hold, r = results.read, gl = results.glide, v = r || h;
@@ -1461,15 +1464,15 @@ function buildShareText(typeName, style, findingsResult, title) {
   if (v) core.push('高さ：' + pitchWord(v.f0) + '（' + Math.round(v.f0) + ' Hz）');
   if (gl) optional.push('音域：' + noteName(gl.low) + '〜' + noteName(gl.high) + '（' + (gl.rangeSt / 12).toFixed(1) + 'オクターブ）');
   if (findingsResult.goods[0]) optional.push('強み：' + findingsResult.goods[0].t);
-  const join = list => [head].concat(list).concat(tag).join('\n');
+  const join = list => [head].concat(list).concat(tag, 'ほかのツール → ' + TOP_URL).join('\n');
   let lines = core.concat(optional);
-  while (lines.length > core.length && xWeight(join(lines)) > X_LIMIT - X_LINK) lines.pop();
+  while (lines.length > core.length && xWeight(join(lines)) - topUrlSave(TOP_URL) > X_LIMIT - X_LINK) lines.pop();
   return join(lines);
 }
 
 function refreshShareLink() {
   const text = $('shareText').value, url = $('shareText').dataset.url;
-  const left = X_LIMIT - xWeight(text) - X_LINK;
+  const left = X_LIMIT - xWeight(text) + topUrlSave(text) - X_LINK;
   $('shareCount').textContent = left >= 0 ? 'あと' + left + '文字分（半角換算）' : left * -1 + '文字分（半角換算）オーバーしています';
   $('shareCount').classList.toggle('over', left < 0);
   $('shareX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
