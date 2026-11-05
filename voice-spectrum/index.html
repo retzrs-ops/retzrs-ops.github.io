@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>こえスペクトル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EBFA; --surface:#F7F8FF; --ink:#1C1A52; --muted:#55548A; --line:#C4C7E8;
+  --accent:#D3145F; --accent-ink:#FFFFFF; --track:#D3D6F0; --warn-bg:#FFF0C7; --warn-ink:#5B4300;
+  --curve:#3B2A9E; --curve-soft:#A9A6DC; --band:#FFD76A55;
+  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#151338; --surface:#211E55; --ink:#ECEBFF; --muted:#B5B3E0; --line:#3D3A7A;
+    --accent:#FF5C8D; --accent-ink:#2A0716; --track:#3D3A7A; --warn-bg:#4A3A10; --warn-ink:#FFE7A6;
+    --curve:#FFB84D; --curve-soft:#6D69B5; --band:#FFD76A2B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151338; --surface:#211E55; --ink:#ECEBFF; --muted:#B5B3E0; --line:#3D3A7A;
+  --accent:#FF5C8D; --accent-ink:#2A0716; --track:#3D3A7A; --warn-bg:#4A3A10; --warn-ink:#FFE7A6;
+  --curve:#FFB84D; --curve-soft:#6D69B5; --band:#FFD76A2B;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.75}
+main{max-width:44rem;margin:0 auto;padding:1.25rem 1rem 3rem}
+h1,h2,h3,p{margin:0}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2.1rem,9vw,3.4rem);line-height:1.15;letter-spacing:.01em}
+.lead{margin-top:.4rem;color:var(--muted)}
+
+.scope{position:relative;margin:1.1rem -1rem 0;height:clamp(13rem,40vh,21rem);background:#120E33;overflow:hidden}
+.scope canvas{display:block;width:100%;height:100%}
+.tick{position:absolute;left:.6rem;transform:translateY(-50%);font-size:.72rem;line-height:1;color:#fff;
+  background:#120E33B0;padding:.15rem .3rem;border-radius:.2rem;pointer-events:none}
+.scope-state{position:absolute;right:.7rem;top:.6rem;color:#fff;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums;
+  background:#120E33C0;padding:.15rem .5rem;border-radius:.3rem}
+.scope-state:empty{display:none}
+@media (min-width:46rem){.scope{margin-left:0;margin-right:0;border-radius:.5rem}}
+
+.guide{margin-top:1.1rem}
+.guide p+p{margin-top:.35rem}
+.script{font-weight:700}
+.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1rem;align-items:center}
+button,.file-btn{font:inherit;font-weight:700;border-radius:.5rem;min-height:3.1rem;padding:.55rem 1.3rem;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;text-align:center}
+#rec{flex:1 1 13rem;background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent);font-size:1.12rem}
+#rec[aria-pressed="true"]{background:transparent;color:var(--accent)}
+#rec:disabled{opacity:.55;cursor:wait}
+.file-btn{flex:1 1 11rem;background:transparent;color:var(--ink);border:2px solid var(--line)}
+.file-btn.off{opacity:.55;pointer-events:none}
+#file{position:absolute;width:1px;height:1px;opacity:0}
+#file:focus-visible+.file-btn,button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.status{margin-top:.8rem;min-height:1.75em;color:var(--muted)}
+.status.err{color:var(--accent);font-weight:700}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:1.1rem}
+.steps button{min-height:3.2rem;padding:.35rem .25rem;background:transparent;color:var(--muted);border:2px solid var(--line);
+  font-size:.95rem;line-height:1.25;flex-direction:column}
+.steps button[aria-current="step"]{color:var(--ink);border-color:var(--ink)}
+.steps button.done{background:var(--track);color:var(--ink)}
+.steps small{font-size:.74rem;font-weight:500}
+#result{margin-top:1.4rem;scroll-margin-top:1rem}
+#result[hidden]{display:none}
+#result:focus{outline:none}
+.verdict{border-top:6px solid var(--ink);padding-top:1rem}
+#typeName{font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,8.4vw,3rem);line-height:1.3;word-break:keep-all;overflow-wrap:anywhere}
+#pitchLine{margin-top:.5rem;font-weight:700}
+#typeText{margin-top:.5rem;max-width:38em}
+.warns{margin:1rem 0 0;padding:0;list-style:none}
+.warns li{background:var(--warn-bg);color:var(--warn-ink);padding:.55rem .75rem;border-radius:.4rem;font-size:.92rem;line-height:1.6}
+.warns li+li{margin-top:.4rem}
+section.block{margin-top:2.1rem}
+h3{font-size:1.15rem;font-weight:700;margin-bottom:.7rem}
+.meter{display:grid;grid-template-columns:5.2em 1fr;column-gap:.7rem;align-items:center;padding:.5rem 0}
+.meter+.meter{border-top:1px solid var(--line)}
+.meter b{font-weight:700}
+.rail{position:relative;height:.55rem;border-radius:.3rem;background:var(--track);margin:.45rem .5rem 0}
+.dot{position:absolute;top:50%;width:1.05rem;height:1.05rem;border-radius:50%;background:var(--accent);
+  border:3px solid var(--surface);transform:translate(-50%,-50%);transition:left .55s cubic-bezier(.2,.8,.2,1)}
+.ends{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);line-height:1.3;margin-top:.45rem}
+.chart{background:var(--surface);border-radius:.5rem;padding:.5rem .4rem .2rem}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{font-family:var(--body);font-size:12px;fill:var(--muted)}
+.chart text.fm{fill:var(--accent);font-weight:700}
+.cap{margin-top:.55rem;font-size:.92rem;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{padding:.45rem .2rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{text-align:left;font-weight:500;color:var(--muted)}
+td{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.progress{margin-top:.8rem;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;color:var(--muted);font-size:.95rem}
+#nextTest{min-height:2.6rem;padding:.3rem 1rem;background:transparent;color:var(--ink);border:2px solid var(--ink)}
+#nextTest[hidden]{display:none}
+.finds{margin:0;padding:0;list-style:none}
+.finds li{padding:.6rem 0;border-top:1px solid var(--line)}
+.finds li:first-child{border-top:0;padding-top:0}
+.finds b{display:block;font-weight:700}
+.tg th[colspan]{padding-top:1.1rem;color:var(--ink);font-weight:700;border-bottom:2px solid var(--ink)}
+th small{display:block;font-size:.78rem;line-height:1.4;color:var(--muted)}
+td{white-space:normal;min-width:6.5em}
+#aiBox[hidden],#aiText[hidden]{display:none}
+#aiBtn{width:100%;background:var(--ink);color:var(--bg);border:2px solid var(--ink)}
+#aiBtn:disabled{opacity:.55;cursor:wait}
+#aiText{margin-top:.8rem;white-space:pre-wrap}
+.shared-note{display:none;margin-top:.9rem;padding:.8rem;background:var(--surface);border-radius:.5rem}
+.shared-note button{margin-top:.6rem;width:100%;background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent)}
+body.shared .shared-note{display:block}
+body.shared .lead,body.shared #steps,body.shared #scope,body.shared #guide,body.shared .actions,body.shared #status,
+body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
+#shareText{display:block;width:100%;min-height:11rem;padding:.7rem;font:inherit;color:var(--ink);background:var(--surface);
+  border:2px solid var(--line);border-radius:.5rem;resize:vertical}
+#shareText:focus-visible,#shareX:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.share-label{display:block;font-weight:700;margin-bottom:.35rem}
+#shareCount{margin-top:.3rem;font-size:.9rem;color:var(--muted);text-align:right}
+#shareCount.over{color:var(--accent);font-weight:700}
+.share-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.5rem}
+#shareX{flex:1 1 11rem;font-weight:700;min-height:3.1rem;padding:.55rem 1.3rem;border-radius:.5rem;display:inline-flex;align-items:center;
+  justify-content:center;text-decoration:none;background:var(--ink);color:var(--bg);border:2px solid var(--ink)}
+#shareCopy{flex:1 1 11rem;background:transparent;color:var(--ink);border:2px solid var(--line)}
+.notes{margin-top:2rem;font-size:.9rem;color:var(--muted)}
+.notes p+p{margin-top:.4rem}
+#again{margin-top:1.2rem;width:100%;background:transparent;color:var(--ink);border:2px solid var(--ink)}
+@media (prefers-reduced-motion:reduce){.dot{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>こえスペクトル</h1>
+  <p class="lead">3つの短いテストで、音色・喉の状態・話し方・音域まで声を読み解きます。</p>
+
+  <div class="steps" id="steps"></div>
+
+  <div class="shared-note" id="sharedNote">
+    <p>共有された診断結果です。録音された音声は含まれず、測定値から再現しています。</p>
+    <button id="mineTop" type="button">自分の声も測る</button>
+  </div>
+
+  <div class="scope" id="scope">
+    <canvas id="spec" role="img" aria-label="声の周波数を時間に沿って色で示すスペクトログラム"></canvas>
+    <div id="ticks"></div>
+    <div class="scope-state" id="scopeState" aria-hidden="true"></div>
+  </div>
+
+  <div class="guide" id="guide"></div>
+
+  <div class="actions">
+    <button id="rec" type="button" aria-pressed="false">録音する</button>
+    <input id="file" type="file" accept="audio/*,video/mp4,.m4a,.mp3,.wav,.aac,.ogg,.flac">
+    <label class="file-btn" id="fileLabel" for="file">音声ファイルを選ぶ</label>
+  </div>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <div id="result" hidden tabindex="-1">
+    <div class="verdict">
+      <h2 id="typeName"></h2>
+      <p id="pitchLine"></p>
+      <p id="typeText"></p>
+      <div class="progress"><span id="progressText"></span><button id="nextTest" type="button"></button></div>
+      <ul class="warns" id="warns"></ul>
+    </div>
+
+    <section class="block" id="goodBlock">
+      <h3>強み</h3>
+      <ul class="finds" id="goods"></ul>
+    </section>
+
+    <section class="block" id="careBlock">
+      <h3>気をつけたい点</h3>
+      <ul class="finds" id="cares"></ul>
+    </section>
+
+    <section class="block">
+      <h3>向いている場面</h3>
+      <p id="suits"></p>
+    </section>
+
+    <section class="block">
+      <h3>おすすめの練習</h3>
+      <ul class="finds" id="drills"></ul>
+    </section>
+
+    <section class="block">
+      <h3>声の特徴</h3>
+      <div id="meters"></div>
+    </section>
+
+    <section class="block" id="ltasBlock">
+      <h3>周波数の分布</h3>
+      <div class="chart" id="ltas"></div>
+      <p class="cap">濃い線が声全体の平均スペクトルです。F1〜F3は共鳴の山で、母音によって動きます。黄色の帯は声の通りに関わる2〜4 kHzです。</p>
+    </section>
+
+    <section class="block">
+      <h3>測定値</h3>
+      <div class="table-wrap"><table class="tg"><tbody id="nums"></tbody></table></div>
+    </section>
+
+    <section class="block" id="aiBox" hidden>
+      <h3>Claudeの解説</h3>
+      <button id="aiBtn" type="button">測定値をもとに解説してもらう</button>
+      <p id="aiText" hidden aria-live="polite"></p>
+    </section>
+
+    <section class="block" id="shareBlock">
+      <h3>Xで共有</h3>
+      <label class="share-label" for="shareText">投稿する文章</label>
+      <textarea id="shareText"></textarea>
+      <p id="shareCount"></p>
+      <div class="share-actions">
+        <a id="shareX" target="_blank" rel="noopener noreferrer">Xに投稿する</a>
+        <button id="shareCopy" type="button">文章とリンクをコピー</button>
+      </div>
+      <p class="cap">投稿には詳細レポートのリンクが付きます。リンクには測定値と判定結果が入り、音声は入りません。リンクを知っている人は誰でも読めます。</p>
+    </section>
+
+    <div class="notes">
+      <p>判定は音響特徴からの目安で、マイクや部屋の響き、その日の体調によって変わります。病気の有無を判断するものではありません。声がれや喉の痛みが2週間以上続くときは耳鼻咽喉科に相談してください。</p>
+      <p id="privacy">音声はこの端末の中だけで処理し、どこにも送信も保存もしません。</p>
+    </div>
+    <button id="again" type="button">最初からやり直す</button>
+  </div>
+</main>
+
+<script>
+/*CORE-START*/
+const SR = 16000, WIN = 640, HOP = 320, NFFT = 1024;
+const MIN_F0 = 65;
+const ROWS = 128, FLOW = 70, FHIGH = 8000;
+const READ_MORA = 57;
+const CPP_LO = 18, CPP_HI = 31;
+const JITTER_CAL = 1.9; // 隣り合う周期の平均を測る分の補正。既知のジッターを与えた合成音声で調整
+
+const clamp01 = v => Math.min(1, Math.max(0, v));
+const scale = (v, lo, hi) => clamp01((v - lo) / (hi - lo));
+const median = a => percentile(a, .5);
+function percentile(arr, p) {
+  if (!arr.length) return NaN;
+  const s = Array.from(arr).sort((a, b) => a - b);
+  const i = (s.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i);
+  return s[lo] + (s[hi] - s[lo]) * (i - lo);
+}
+const toDb = p => 10 * Math.log10(Math.max(p, 1e-14));
+
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi;
+        re[a] += xr; im[a] += xi;
+        const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
+      }
+    }
+  }
+}
+
+function pitchFrame(x, s, minLag, maxLag, nsdf) {
+  for (let tau = minLag - 1; tau <= maxLag + 1; tau++) {
+    let acf = 0, m = 0;
+    const end = WIN - tau;
+    for (let i = 0; i < end; i++) {
+      const a = x[s + i], b = x[s + i + tau];
+      acf += a * b; m += a * a + b * b;
+    }
+    nsdf[tau] = m > 0 ? 2 * acf / m : 0;
+  }
+  const peaks = [];
+  let best = 0;
+  for (let t = minLag; t <= maxLag; t++) {
+    if (nsdf[t] > nsdf[t - 1] && nsdf[t] >= nsdf[t + 1] && nsdf[t] > 0) {
+      peaks.push(t);
+      if (nsdf[t] > best) best = nsdf[t];
+    }
+  }
+  if (!peaks.length) return { f0: 0, clarity: 0 };
+  const t = peaks.find(p => nsdf[p] >= best * .9);
+  const a = nsdf[t - 1], b = nsdf[t], c = nsdf[t + 1];
+  const denom = a - 2 * b + c;
+  const shift = denom ? .5 * (a - c) / denom : 0;
+  return { f0: SR / (t + shift), clarity: Math.min(1, b - .25 * (a - c) * shift) };
+}
+
+function lpcFormants(x, s, ham, order) {
+  const y = new Float64Array(WIN);
+  for (let i = 1; i < WIN; i++) y[i] = (x[s + i] - .97 * x[s + i - 1]) * ham[i];
+  const r = new Float64Array(order + 1);
+  for (let k = 0; k <= order; k++) { let v = 0; for (let i = k; i < WIN; i++) v += y[i] * y[i - k]; r[k] = v; }
+  if (r[0] <= 0) return null;
+  r[0] *= 1.0001;
+  const a = new Float64Array(order + 1); a[0] = 1;
+  let e = r[0];
+  for (let i = 1; i <= order; i++) {
+    let acc = r[i];
+    for (let j = 1; j < i; j++) acc += a[j] * r[i - j];
+    const k = -acc / e;
+    const prev = a.slice();
+    a[i] = k;
+    for (let j = 1; j < i; j++) a[j] = prev[j] + k * prev[i - j];
+    e *= 1 - k * k;
+    if (e <= 0) return null;
+  }
+  const pts = 220, env = new Float64Array(pts), step = 4200 / pts;
+  for (let p = 0; p < pts; p++) {
+    const w = 2 * Math.PI * p * step / SR;
+    let re = 1, im = 0;
+    for (let k = 1; k <= order; k++) { re += a[k] * Math.cos(w * k); im -= a[k] * Math.sin(w * k); }
+    env[p] = 1 / (re * re + im * im);
+  }
+  const cand = [];
+  for (let p = 1; p < pts - 1; p++) if (env[p] > env[p - 1] && env[p] >= env[p + 1]) cand.push(p * step);
+  const f1 = cand.find(f => f >= 200 && f <= 1050);
+  if (!f1) return null;
+  const f2 = cand.find(f => f > f1 + 200 && f >= 650 && f <= 2900);
+  if (!f2) return null;
+  const f3 = cand.find(f => f > f2 + 200 && f >= 1700 && f <= 4000);
+  return { f1, f2, f3: f3 || 0 };
+}
+
+// 1周期ごとの長さと大きさを測り、周期の細かなばらつきを出す
+function cyclePerturbation(x, start, end, f0) {
+  const periods = [], amps = [];
+  const flush = { j: [], s: [] };
+  let pos = start, prevT = 0, prevA = 0;
+  while (pos < end) {
+    const fq = f0[Math.round(pos / HOP)];
+    if (!fq) { pos += HOP; prevT = 0; continue; }
+    const T = SR / fq, L = Math.round(T);
+    const lo = Math.floor(T * .85), hi = Math.ceil(T * 1.15);
+    if (pos + hi + L + 2 >= end) break;
+    let e0 = 0;
+    for (let i = 0; i < L; i++) e0 += x[pos + i] * x[pos + i];
+    const score = new Float64Array(hi + 2);
+    let bestLag = 0, best = -1;
+    for (let lag = lo - 1; lag <= hi + 1; lag++) {
+      let c = 0, e1 = 0;
+      for (let i = 0; i < L; i++) { const b = x[pos + lag + i]; c += x[pos + i] * b; e1 += b * b; }
+      score[lag] = (e0 > 0 && e1 > 0) ? c / Math.sqrt(e0 * e1) : 0;
+      if (lag >= lo && lag <= hi && score[lag] > best) { best = score[lag]; bestLag = lag; }
+    }
+    if (best < .75 || bestLag <= lo || bestLag >= hi) { pos += L; prevT = 0; continue; }
+    const a = score[bestLag - 1], b = score[bestLag], c = score[bestLag + 1];
+    const den = a - 2 * b + c, per = bestLag + (den ? .5 * (a - c) / den : 0);
+    const amp = Math.sqrt(e0 / L);
+    if (prevT) {
+      flush.j.push(Math.abs(per - prevT));
+      flush.s.push(Math.abs(amp - prevA));
+    }
+    periods.push(per); amps.push(amp);
+    prevT = per; prevA = amp;
+    pos += Math.max(1, Math.round(per));
+  }
+  if (flush.j.length < 30) return null;
+  const avg = a => a.reduce((p, v) => p + v, 0) / a.length;
+  return { jitter: JITTER_CAL * 100 * avg(flush.j) / avg(periods), shimmer: 100 * avg(flush.s) / avg(amps), cycles: periods.length };
+}
+
+// ケプストラムのピークの高さ。周期性がはっきりした声ほど大きい
+function cppFrame(pow, f0v, cre, cim) {
+  const n = NFFT;
+  for (let b = 0; b <= n / 2; b++) {
+    const v = toDb(pow[b]);
+    cre[b] = v; if (b && b < n / 2) cre[n - b] = v;
+  }
+  cim.fill(0);
+  fft(cre, cim);
+  const q0 = 16, q1 = Math.min(n / 2 - 1, 280);
+  let sx = 0, sy = 0, sxx = 0, sxy = 0, m = 0;
+  const c = new Float64Array(q1 + 1);
+  for (let q = q0; q <= q1; q++) {
+    c[q] = toDb((cre[q] * cre[q] + cim[q] * cim[q]) / (n * n));
+    sx += q; sy += c[q]; sxx += q * q; sxy += q * c[q]; m++;
+  }
+  const slope = (m * sxy - sx * sy) / (m * sxx - sx * sx), icpt = (sy - slope * sx) / m;
+  const center = SR / f0v;
+  let best = -Infinity, at = 0;
+  for (let q = Math.max(q0, Math.floor(center * .85)); q <= Math.min(q1, Math.ceil(center * 1.15)); q++) {
+    if (c[q] > best) { best = c[q]; at = q; }
+  }
+  return at ? best - (slope * at + icpt) : NaN;
+}
+
+function detectVibrato(cents) {
+  const n = cents.length;
+  if (n < 75) return null;
+  const k = 25, flat = new Float64Array(n);
+  let sum = 0, cnt = 0;
+  for (let i = 0; i < n; i++) {
+    let acc = 0, c = 0;
+    for (let j = Math.max(0, i - k); j <= Math.min(n - 1, i + k); j++) { acc += cents[j]; c++; }
+    flat[i] = cents[i] - acc / c;
+    sum += flat[i] * flat[i]; cnt++;
+  }
+  const total = sum / cnt;
+  if (total < 1) return null;
+  let best = 0, rate = 0;
+  for (let hz = 3.5; hz <= 8.01; hz += .25) {
+    let cr = 0, ci = 0;
+    const w = 2 * Math.PI * hz * HOP / SR;
+    for (let i = 0; i < n; i++) { cr += flat[i] * Math.cos(w * i); ci += flat[i] * Math.sin(w * i); }
+    const p = 2 * (cr * cr + ci * ci) / (n * n);
+    if (p > best) { best = p; rate = hz; }
+  }
+  const share = best / total, extent = 2 * Math.sqrt(2 * best);
+  return share >= .35 && extent >= 25 ? { rate, extent } : null;
+}
+
+function analyze(input, mode) {
+  mode = mode || 'hold';
+  const MAX_F0 = mode === 'glide' ? 1100 : 800;
+  const frames = Math.floor((input.length - WIN) / HOP) + 1;
+  if (frames < 25) return { error: 'short' };
+  const x = Float64Array.from(input);
+  let mean = 0; for (let i = 0; i < x.length; i++) mean += x[i]; mean /= x.length;
+  for (let i = 0; i < x.length; i++) x[i] -= mean;
+
+  const rms = new Float64Array(frames);
+  for (let f = 0; f < frames; f++) {
+    let v = 0; const s = f * HOP;
+    for (let i = 0; i < WIN; i++) v += x[s + i] * x[s + i];
+    rms[f] = Math.sqrt(v / WIN);
+  }
+  const loud = percentile(rms, .95);
+  const gate = Math.max(loud * .12, .0012);
+
+  const minLag = Math.floor(SR / MAX_F0), maxLag = Math.ceil(SR / MIN_F0);
+  const nsdf = new Float64Array(maxLag + 3);
+  const f0 = new Float64Array(frames), clarity = new Float64Array(frames);
+  for (let f = 0; f < frames; f++) {
+    if (rms[f] < gate) continue;
+    const r = pitchFrame(x, f * HOP, minLag, maxLag, nsdf);
+    clarity[f] = r.clarity;
+    if (r.clarity >= .6 && r.f0 >= MIN_F0 && r.f0 <= MAX_F0) f0[f] = r.f0;
+  }
+  const rough = median(Array.from(f0).filter(v => v > 0));
+  if (!(rough > 0)) return { error: 'novoice' };
+  if (mode !== 'glide') {
+    for (let f = 0; f < frames; f++) if (f0[f] && (f0[f] < rough * .45 || f0[f] > rough * 2.2)) f0[f] = 0;
+  } else {
+    // 音域テストは高さの幅が主役なので、短い誤検出だけを落とす
+    const copy = f0.slice();
+    for (let f = 2; f < frames - 2; f++) {
+      if (!copy[f]) continue;
+      const near = [f - 2, f - 1, f, f + 1, f + 2].map(i => copy[i]).filter(v => v);
+      if (near.length >= 3) f0[f] = median(near);
+    }
+    for (let f = 0; f < frames;) {
+      if (!f0[f]) { f++; continue; }
+      let e = f; while (e + 1 < frames && f0[e + 1]) e++;
+      if (e - f + 1 < 6) for (let i = f; i <= e; i++) f0[i] = 0;
+      f = e + 1;
+    }
+  }
+  const voicedIdx = []; for (let f = 0; f < frames; f++) if (f0[f]) voicedIdx.push(f);
+  if (voicedIdx.length * HOP / SR < 1) return { error: 'novoice' };
+
+  // 途切れの少ない一番長い発声区間
+  let runA = voicedIdx[0], runB = runA, bestA = runA, bestB = runA;
+  for (let i = 1; i < voicedIdx.length; i++) {
+    if (voicedIdx[i] - voicedIdx[i - 1] <= 4) runB = voicedIdx[i];
+    else { runA = runB = voicedIdx[i]; }
+    if (runB - runA > bestB - bestA) { bestA = runA; bestB = runB; }
+  }
+
+  const hann = new Float64Array(WIN), ham = new Float64Array(WIN);
+  for (let i = 0; i < WIN; i++) {
+    hann[i] = .5 - .5 * Math.cos(2 * Math.PI * i / (WIN - 1));
+    ham[i] = .54 - .46 * Math.cos(2 * Math.PI * i / (WIN - 1));
+  }
+  const bins = NFFT / 2 + 1, hz = SR / NFFT;
+  const ltas = new Float64Array(bins);
+  const re = new Float64Array(NFFT), im = new Float64Array(NFFT), pow = new Float64Array(bins);
+  const spec = new Float32Array(frames * ROWS);
+  const rowBin = new Float64Array(ROWS);
+  for (let r = 0; r < ROWS; r++) rowBin[r] = FLOW * Math.pow(FHIGH / FLOW, r / (ROWS - 1)) / hz;
+  const h1h2 = [], cpps = [];
+  const cre = new Float64Array(NFFT), cim = new Float64Array(NFFT);
+  let specMax = -200;
+  for (let f = 0; f < frames; f++) {
+    const s = f * HOP;
+    re.fill(0); im.fill(0);
+    for (let i = 0; i < WIN; i++) re[i] = x[s + i] * hann[i];
+    fft(re, im);
+    for (let b = 0; b < bins; b++) pow[b] = re[b] * re[b] + im[b] * im[b];
+    for (let r = 0; r < ROWS; r++) {
+      const p = rowBin[r], l = Math.min(Math.floor(p), bins - 2), t = p - l;
+      const db = toDb(pow[l] * (1 - t) + pow[l + 1] * t);
+      spec[f * ROWS + r] = db;
+      if (db > specMax) specMax = db;
+    }
+    if (f0[f]) {
+      for (let b = 0; b < bins; b++) ltas[b] += pow[b];
+      if (f % 2 === 0) { const v = cppFrame(pow, f0[f], cre, cim); if (!isNaN(v)) cpps.push(v); }
+      if (f0[f] >= 100) {
+        const peak = c => {
+          let m = 0;
+          const lo = Math.max(1, Math.round(c * .88 / hz)), hi = Math.min(bins - 1, Math.round(c * 1.12 / hz));
+          for (let b = lo; b <= hi; b++) if (pow[b] > m) m = pow[b];
+          return m;
+        };
+        h1h2.push(toDb(peak(f0[f])) - toDb(peak(2 * f0[f])));
+      }
+    }
+  }
+  for (let b = 0; b < bins; b++) ltas[b] /= voicedIdx.length;
+
+  const bandE = (lo, hi) => {
+    let v = 0;
+    for (let b = Math.ceil(lo / hz); b <= Math.min(bins - 1, Math.floor(hi / hz)); b++) v += ltas[b];
+    return v;
+  };
+  const alpha = toDb(bandE(1000, 5000)) - toDb(bandE(50, 1000));
+  const ring = toDb(bandE(2000, 4000)) - toDb(bandE(50, 8000));
+  const bandPeak = (lo, hi) => {
+    let v = 0;
+    for (let b = Math.ceil(lo / hz); b <= Math.floor(hi / hz); b++) if (ltas[b] > v) v = ltas[b];
+    return v;
+  };
+  const spr = toDb(bandPeak(2000, 4000)) - toDb(bandPeak(50, 2000));
+  const cpp = cpps.length ? median(cpps) : NaN;
+
+  // 対数軸で等間隔に平均して、スペクトルの傾きを出す
+  const xs = [], ys = [];
+  const K = 28;
+  for (let k = 0; k < K; k++) {
+    const lo = 100 * Math.pow(50, k / K), hi = 100 * Math.pow(50, (k + 1) / K);
+    const e = bandE(lo, hi);
+    if (e > 0) { xs.push(Math.log2((lo + hi) / 2)); ys.push(toDb(e / Math.max(1, (hi - lo) / hz))); }
+  }
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  let sxy = 0, sxx = 0;
+  xs.forEach((v, i) => { sxy += (v - mx) * (ys[i] - my); sxx += (v - mx) * (v - mx); });
+  const tilt = sxx ? sxy / sxx : 0;
+
+  const hnrVals = voicedIdx.map(f => { const c = Math.min(clarity[f], .9995); return 10 * Math.log10(c / (1 - c)); });
+  const hnr = median(hnrVals);
+  const f0Vals = voicedIdx.map(f => f0[f]);
+  const f0Med = median(f0Vals), f0Lo = percentile(f0Vals, .05), f0Hi = percentile(f0Vals, .95);
+
+  // 語尾の上がり下がりを除くため、近傍の中央値からのズレだけを見る
+  const centsDev = [], dbDev = [];
+  for (const f of voicedIdx) {
+    if (f < 2 || f >= frames - 2) continue;
+    const near = [f - 2, f - 1, f, f + 1, f + 2];
+    if (near.some(i => !f0[i])) continue;
+    const mf = median(near.map(i => f0[i])), mr = median(near.map(i => rms[i]));
+    centsDev.push(1200 * Math.log2(f0[f] / mf));
+    dbDev.push(20 * Math.log10(rms[f] / mr));
+  }
+  if (centsDev.length < 20) return { error: 'novoice' };
+  const rmsOf = a => a.length ? Math.sqrt(a.reduce((s, v) => s + v * v, 0) / a.length) : NaN;
+  const wobble = rmsOf(centsDev), levelWobble = rmsOf(dbDev);
+
+  const extra = {};
+  if (mode === 'hold') {
+    extra.sustain = (bestB - bestA + 1) * HOP / SR;
+    const fm = { f1: [], f2: [], f3: [] };
+    for (let f = bestA; f <= bestB; f += 2) {
+      if (!f0[f]) continue;
+      const r = lpcFormants(x, f * HOP, ham, 16);
+      if (r) { fm.f1.push(r.f1); fm.f2.push(r.f2); if (r.f3) fm.f3.push(r.f3); }
+    }
+    if (fm.f1.length >= 8) {
+      extra.formants = { f1: median(fm.f1), f2: median(fm.f2), f3: fm.f3.length >= 8 ? median(fm.f3) : 0 };
+      if (extra.formants.f3) extra.tract = 35000 / (extra.formants.f3 - extra.formants.f1);
+    }
+    if (extra.sustain >= 1) {
+      const margin = Math.round((bestB - bestA) * .1);
+      const a = bestA + margin, b = Math.min(bestB - margin, a + 200);
+      extra.cycle = cyclePerturbation(x, a * HOP, b * HOP, f0);
+      const cents = [];
+      for (let f = bestA + margin; f <= bestB - margin; f++) if (f0[f]) cents.push(1200 * Math.log2(f0[f] / f0Med));
+      extra.vibrato = detectVibrato(cents);
+    }
+  }
+  if (mode === 'read') {
+    const first = voicedIdx[0], last = voicedIdx[voicedIdx.length - 1];
+    const span = (last - first + 1) * HOP / SR;
+    let pauseFrames = 0, pauses = 0, gap = 0;
+    for (let f = first; f <= last; f++) {
+      if (rms[f] < gate * 1.5 && !f0[f]) gap++;
+      else { if (gap >= 10) { pauseFrames += gap; pauses++; } gap = 0; }
+    }
+    const pauseSec = pauseFrames * HOP / SR, talk = span - pauseSec;
+    extra.span = span; extra.pauses = pauses; extra.pauseShare = pauseSec / span;
+    extra.moraRate = READ_MORA / talk;
+    const st = f0Vals.map(v => 12 * Math.log2(v / f0Med));
+    const mean = st.reduce((a, b) => a + b, 0) / st.length;
+    extra.intonation = Math.sqrt(st.reduce((a, b) => a + (b - mean) * (b - mean), 0) / st.length);
+    extra.pitchSpan = 12 * Math.log2(f0Hi / f0Lo);
+    const lv = voicedIdx.map(f => 20 * Math.log10(rms[f]));
+    extra.dynamics = percentile(lv, .9) - percentile(lv, .1);
+  }
+  if (mode === 'glide') {
+    extra.low = percentile(f0Vals, .01); extra.high = percentile(f0Vals, .99);
+    extra.rangeSt = 12 * Math.log2(extra.high / extra.low);
+    const jumps = [];
+    for (let f = 3; f < frames; f++) {
+      if (f0[f] && f0[f - 3]) {
+        const d = Math.abs(12 * Math.log2(f0[f] / f0[f - 3]));
+        const octaveSlip = d >= 11 && d <= 13;
+        if (d >= 3 && !octaveSlip && (!jumps.length || f - jumps[jumps.length - 1].f > 25)) jumps.push({ f, at: Math.min(f0[f], f0[f - 3]), size: d });
+      }
+    }
+    extra.breaks = jumps;
+  }
+
+  const h12 = h1h2.length ? median(h1h2) : 6;
+  const scores = {
+    height: 100 * scale(Math.log2(f0Med), Math.log2(85), Math.log2(350)),
+    bright: 100 * scale(alpha, -30, -8),
+    project: 100 * scale(ring, -32, -14),
+    breath: 100 * (.45 * (1 - scale(hnr, 8, 24)) + .35 * (1 - scale(cpp, CPP_LO, CPP_HI)) + .2 * scale(h12, 0, 14)),
+    steady: isNaN(wobble) ? 50 : 100 * (1 - (.6 * scale(wobble, 5, 45) + .4 * scale(levelWobble, .2, 1.5)))
+  };
+
+  // 声のない区間が十分にあるときだけ雑音量を見積もる
+  const quiet = [];
+  for (let f = 0; f < frames; f++) if (!f0[f]) quiet.push(rms[f]);
+  const snr = quiet.length >= 12
+    ? 20 * Math.log10(median(voicedIdx.map(f => rms[f])) / Math.max(percentile(quiet, .3), 1e-6)) : Infinity;
+
+  if (extra.cycle) {
+    scores.rough = 100 * (.5 * scale(extra.cycle.jitter, .3, 2) + .5 * scale(extra.cycle.shimmer, 2, 9));
+  }
+  if (mode === 'read') {
+    scores.inton = 100 * scale(extra.intonation, 1.5, 5);
+    if (extra.moraRate >= 3 && extra.moraRate <= 12) scores.pace = 100 * scale(extra.moraRate, 5, 10);
+  }
+  if (mode === 'glide') scores.range = 100 * scale(extra.rangeSt, 12, 36);
+
+  return Object.assign({
+    mode, duration: input.length / SR, voicedSec: voicedIdx.length * HOP / SR,
+    f0: f0Med, f0Lo, f0Hi, hnr, cpp, spr, alpha, ring, tilt, h12, wobble, levelWobble, scores, snr,
+    ltas, hz, frames, spec, specMax, f0Track: f0
+  }, extra);
+}
+
+function classify(s) {
+  const clear = s.breath < 50, bright = s.bright >= 50;
+  if (clear && bright) return { name: '澄んで通る声', text: '声の芯がはっきりしていて、高い周波数まで倍音がよく伸びています。騒がしい場所でも言葉が届きやすい声です。' };
+  if (clear) return { name: '深くなめらかな声', text: '息の混ざりが少なく、エネルギーが低めの帯域に集まっています。落ち着いて聞こえ、長く聞いても疲れにくい声です。' };
+  if (bright) return { name: '軽やかなエアリー声', text: '息の成分が混ざりつつ、高い帯域にも響きがあります。やわらかさの中に明るさがある、親しみやすい声です。' };
+  return { name: 'スモーキーな声', text: '息の成分が多く、響きは低めの帯域に集まっています。ハスキーで温かみがあり、近くで語りかけるような声です。' };
+}
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+function noteName(f) {
+  const m = Math.round(69 + 12 * Math.log2(f / 440));
+  return NOTES[(m % 12 + 12) % 12] + (Math.floor(m / 12) - 1);
+}
+function pitchWord(f) {
+  if (f < 120) return '低め';
+  if (f < 180) return 'やや低め';
+  if (f < 250) return '中くらい';
+  if (f < 320) return 'やや高め';
+  return '高め';
+}
+/*CORE-END*/
+
+const $ = id => document.getElementById(id);
+const canvas = $('spec'), g = canvas.getContext('2d');
+const STOPS = [[0, 18, 14, 51], [.35, 59, 42, 158], [.62, 201, 44, 142], [.82, 255, 122, 69], [1, 255, 236, 130]];
+const LUT = new Uint8ClampedArray(256 * 3);
+for (let i = 0; i < 256; i++) {
+  const t = i / 255;
+  let k = 0; while (k < STOPS.length - 2 && t > STOPS[k + 1][0]) k++;
+  const a = STOPS[k], b = STOPS[k + 1], u = (t - a[0]) / (b[0] - a[0]);
+  for (let c = 0; c < 3; c++) LUT[i * 3 + c] = a[c + 1] + (b[c + 1] - a[c + 1]) * u;
+}
+
+const TESTS = {
+  hold: {
+    no: 1, name: 'のばす声', sub: '喉と息', max: 20,
+    guide: ['深く息を吸って、「あー」と楽な高さで、できるだけ長く一定にのばしてください。息が続かなくなったら止めます。',
+      '喉の周期の安定、息の混ざり具合、息の長さ、声の響きを測ります。']
+  },
+  read: {
+    no: 2, name: '読む声', sub: '話し方', max: 16,
+    guide: ['次の文章を、ふだん話す調子で最後まで読んでください。',
+      '「今日は朝から風が強くて、川沿いの道を歩いて帰りました。夕方には雨も上がって、空がきれいに晴れました。」'],
+    strong: 1
+  },
+  glide: {
+    no: 3, name: '音域', sub: '低音〜高音', max: 14,
+    guide: ['「あー」で、無理なく出せる一番低い音から一番高い音まで、サイレンのようにゆっくり上げて下げてください。',
+      '裏声を使っても大丈夫です。出せる音域と、高さが急に跳ぶ位置を測ります。']
+  }
+};
+const ORDER = ['hold', 'read', 'glide'];
+let current = 'hold';
+let results = {}, warnings = {};
+let audio = null;
+let shown = null;
+let sampleFn = null;
+
+function renderSteps() {
+  const box = $('steps'); box.textContent = '';
+  ORDER.forEach(k => {
+    const t = TESTS[k], b = document.createElement('button');
+    b.type = 'button';
+    b.append(t.no + ' ' + t.name + (results[k] ? ' ✓' : ''));
+    const s = document.createElement('small'); s.textContent = t.sub; b.appendChild(s);
+    if (results[k]) b.classList.add('done');
+    if (k === current) b.setAttribute('aria-current', 'step');
+    b.disabled = !!audio || busy;
+    b.addEventListener('click', () => selectTest(k));
+    box.appendChild(b);
+  });
+}
+function selectTest(k, keepCanvas) {
+  current = k;
+  const t = TESTS[k], box = $('guide');
+  box.textContent = '';
+  t.guide.forEach((line, i) => {
+    const p = document.createElement('p'); p.textContent = line;
+    if (t.strong === i) p.className = 'script';
+    box.appendChild(p);
+  });
+  $('rec').textContent = '録音する（最長' + t.max + '秒）';
+  renderSteps();
+  if (!keepCanvas) { setStatus(''); showCanvasFor(k); }
+}
+function showCanvasFor(k) {
+  shown = results[k] || null;
+  if (shown) drawResultSpec(shown); else drawIdle();
+}
+
+function fitCanvas() {
+  const r = canvas.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(r.width * d));
+  canvas.height = Math.max(1, Math.round(r.height * d));
+}
+function drawTicks() {
+  const box = $('ticks'); box.textContent = '';
+  [[250, '250 Hz'], [500, '500'], [1000, '1 kHz'], [2000, '2 k'], [4000, '4 k']].forEach(([f, label]) => {
+    const el = document.createElement('span');
+    el.className = 'tick'; el.textContent = label;
+    el.style.top = (100 - 100 * Math.log(f / FLOW) / Math.log(FHIGH / FLOW)) + '%';
+    box.appendChild(el);
+  });
+}
+function paintGrid(w, h, value) {
+  const img = g.createImageData(w, h), d = img.data;
+  for (let y = 0; y < h; y++) {
+    const row = 1 - y / (h - 1);
+    for (let xp = 0; xp < w; xp++) {
+      const i = Math.round(255 * clamp01(value(xp / (w - 1), row)));
+      const o = (y * w + xp) * 4;
+      d[o] = LUT[i * 3]; d[o + 1] = LUT[i * 3 + 1]; d[o + 2] = LUT[i * 3 + 2]; d[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+}
+// 待機中の見本。架空の声を計算で描いている
+function drawIdle() {
+  shown = null;
+  const w = canvas.width, h = canvas.height;
+  const span = Math.log(FHIGH / FLOW);
+  const fmt = [[700, 900], [1300, 1100], [2700, 2200], [3600, 3000]];
+  const value = (t, r) => {
+    const f = FLOW * Math.exp(r * span);
+    const envT = Math.pow(Math.sin(Math.PI * clamp01((t * 5.2) % 1.25)), .5) * (((t * 5.2) % 1.25) < 1 ? 1 : 0);
+    const f0 = 165 + 45 * Math.sin(t * 7) + 22 * Math.sin(t * 19);
+    const n = Math.max(1, Math.round(f / f0));
+    const dist = Math.abs(f - n * f0) / (f0 * .11);
+    const harm = Math.exp(-dist * dist);
+    let res = 0;
+    fmt.forEach(([c, b], i) => {
+      const fc = c * (1 + .22 * Math.sin(t * 9 + i));
+      const q = (f - fc) / (b * .35);
+      res += Math.exp(-q * q) * (1 - i * .16);
+    });
+    return envT * harm * (.32 * Math.exp(-r * 1.1) + .75 * res);
+  };
+  paintGrid(w, h, value);
+  canvas.setAttribute('aria-label', '声の周波数を時間に沿って色で示すスペクトログラムの見本');
+}
+function drawResultSpec(a) {
+  const w = canvas.width, h = canvas.height, top = a.specMax, range = 70;
+  const value = (t, r) => {
+    const fr = Math.min(a.frames - 1, Math.floor(t * a.frames));
+    const rr = r * (ROWS - 1), l = Math.min(ROWS - 2, Math.floor(rr)), u = rr - l;
+    const v = a.spec[fr * ROWS + l] * (1 - u) + a.spec[fr * ROWS + l + 1] * u;
+    return Math.pow(clamp01((v - top + range) / range), 1.4);
+  };
+  paintGrid(w, h, value);
+  g.lineWidth = Math.max(2, h / 130); g.strokeStyle = '#FFFFFF'; g.lineJoin = 'round';
+  g.beginPath();
+  let pen = false;
+  const span = Math.log(FHIGH / FLOW);
+  for (let f = 0; f < a.frames; f++) {
+    const v = a.f0Track[f];
+    if (!v) { pen = false; continue; }
+    const px = f / a.frames * w, py = h - Math.log(v / FLOW) / span * h;
+    if (pen) g.lineTo(px, py); else g.moveTo(px, py);
+    pen = true;
+  }
+  g.stroke();
+  canvas.setAttribute('aria-label', '録音した声のスペクトログラム。白い線は声の高さの動きです');
+}
+
+function setStatus(msg, isErr) {
+  const el = $('status');
+  el.textContent = msg || '';
+  el.classList.toggle('err', !!isErr);
+}
+let busy = false;
+function setBusy(b) {
+  busy = b;
+  $('rec').disabled = b;
+  $('file').disabled = b;
+  $('fileLabel').classList.toggle('off', b);
+  renderSteps();
+}
+
+async function startRecording() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('この画面ではマイクを使えません。録音済みの音声ファイルを選んでください。', true);
+    return;
+  }
+  const ctx = new Ctx();
+  ctx.resume();
+  let stream;
+  setStatus('マイクの許可を待っています');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+  } catch (e) {
+    ctx.close();
+    const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+    setStatus(denied
+      ? 'マイクを使えませんでした。ブラウザやアプリの設定でマイクを許可するか、スマホのボイスメモで録音したファイルを選んでください。'
+      : 'マイクが見つかりませんでした。接続を確認するか、音声ファイルを選んでください。', true);
+    return;
+  }
+  await ctx.resume();
+  const src = ctx.createMediaStreamSource(stream);
+  const an = ctx.createAnalyser();
+  an.fftSize = 2048; an.smoothingTimeConstant = 0; an.minDecibels = -100; an.maxDecibels = -20;
+  const proc = ctx.createScriptProcessor(4096, 1, 1);
+  const mute = ctx.createGain(); mute.gain.value = 0;
+  const chunks = [];
+  proc.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  src.connect(an); src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+
+  const max = TESTS[current].max;
+  audio = { ctx, stream, proc, an, chunks, max, key: current, started: performance.now(), raf: 0, timer: 0 };
+  $('rec').textContent = '止めて分析する';
+  $('rec').setAttribute('aria-pressed', 'true');
+  $('file').disabled = true; $('fileLabel').classList.add('off');
+  renderSteps();
+  setStatus('録音しています。声を出してください');
+  g.fillStyle = '#120E33'; g.fillRect(0, 0, canvas.width, canvas.height);
+  liveLoop();
+  audio.timer = setTimeout(stopRecording, max * 1000);
+}
+
+function liveLoop() {
+  const a = audio; if (!a) return;
+  const data = new Float32Array(a.an.frequencyBinCount);
+  const w = canvas.width, h = canvas.height, step = Math.max(2, Math.round(w / 300));
+  const col = g.createImageData(step, h);
+  const binHz = a.ctx.sampleRate / a.an.fftSize, span = Math.log(FHIGH / FLOW);
+  const tick = () => {
+    if (audio !== a) return;
+    a.an.getFloatFrequencyData(data);
+    for (let y = 0; y < h; y++) {
+      const f = FLOW * Math.exp((1 - y / (h - 1)) * span);
+      const b = Math.min(data.length - 1, Math.round(f / binHz));
+      const v = Math.pow(clamp01((data[b] + 100) / 75), 1.5);
+      const i = Math.round(v * 255);
+      for (let c = 0; c < step; c++) {
+        const o = (y * step + c) * 4;
+        col.data[o] = LUT[i * 3]; col.data[o + 1] = LUT[i * 3 + 1]; col.data[o + 2] = LUT[i * 3 + 2]; col.data[o + 3] = 255;
+      }
+    }
+    g.drawImage(canvas, step, 0, w - step, h, 0, 0, w - step, h);
+    g.putImageData(col, w - step, 0);
+    const left = Math.max(0, a.max - (performance.now() - a.started) / 1000);
+    $('scopeState').textContent = '録音中 残り' + left.toFixed(1) + '秒';
+    a.raf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+async function stopRecording() {
+  const a = audio; if (!a) return;
+  audio = null;
+  clearTimeout(a.timer); cancelAnimationFrame(a.raf);
+  a.proc.onaudioprocess = null;
+  a.proc.disconnect();
+  a.stream.getTracks().forEach(t => t.stop());
+  $('scopeState').textContent = '';
+  $('rec').textContent = '録音する（最長' + TESTS[current].max + '秒）';
+  $('rec').setAttribute('aria-pressed', 'false');
+  renderSteps();
+  const total = a.chunks.reduce((n, c) => n + c.length, 0);
+  if (!total) { a.ctx.close(); showError('short'); return; }
+  const buf = a.ctx.createBuffer(1, total, a.ctx.sampleRate);
+  let at = 0;
+  for (const c of a.chunks) { buf.copyToChannel(c, 0, at); at += c.length; }
+  await a.ctx.close();
+  run(buf, a.key);
+}
+
+function showError(code) {
+  setBusy(false);
+  showCanvasFor(current);
+  setStatus(code === 'short'
+    ? '録音が短すぎます。3秒以上、声を出してください。'
+    : '声を検出できませんでした。マイクに近づいて、はっきり声を出してください。', true);
+}
+
+const LIMIT_SEC = 25;
+async function run(buffer, key) {
+  setBusy(true);
+  setStatus('分析しています');
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const ch = buffer.getChannelData(0);
+    let peak = 0, clipped = 0;
+    for (let i = 0; i < ch.length; i++) {
+      const v = Math.abs(ch[i]);
+      if (v > peak) peak = v;
+      if (v >= .99) clipped++;
+    }
+    const sec = Math.min(buffer.duration, LIMIT_SEC);
+    const off = new OfflineAudioContext(1, Math.ceil(sec * SR), SR);
+    const s = off.createBufferSource();
+    s.buffer = buffer; s.connect(off.destination); s.start();
+    const rendered = await off.startRendering();
+    const res = analyze(rendered.getChannelData(0), key);
+    if (res.error) { showError(res.error); return; }
+    const w = [];
+    if (buffer.duration > LIMIT_SEC) w.push('最初の' + LIMIT_SEC + '秒だけを分析しました。');
+    if (clipped / ch.length > .001) w.push('音が割れています。マイクから少し離れると正確になります。');
+    if (peak < .03) w.push('録音の音量が小さいため、結果が不安定な場合があります。');
+    if (res.snr < 15) w.push('周囲の雑音が大きく、息っぽさが実際より高く出ている可能性があります。');
+    if (key === 'hold' && res.sustain < 3) w.push('のばした時間が短いため、喉の安定は測れていない場合があります。');
+    if (key === 'hold' && !res.cycle) w.push('周期を十分に追えなかったため、ジッターとシマーは出せませんでした。');
+    if (key === 'read' && res.scores.pace === undefined) w.push('話す速さは、文章を最後まで読んだ声でないと計算できません。');
+    if (key === 'glide' && res.rangeSt < 7) w.push('高さの動きが小さいため、実際の音域より狭く出ています。');
+    results[key] = res;
+    warnings[key] = w;
+    setBusy(false);
+    renderReport();
+    const next = ORDER.find(k => !results[k]);
+    drawResultSpec(res); shown = res;
+    if (next) {
+      selectTest(next, true);
+      setStatus(TESTS[key].name + 'を分析しました。次は「' + TESTS[next].name + '」です。');
+    } else {
+      renderSteps();
+      setStatus('3つのテストが終わりました。');
+      revealReport();
+    }
+  } catch (e) {
+    console.error(e);
+    setBusy(false);
+    showCanvasFor(current);
+    setStatus('分析に失敗しました。別の音声ファイルで試すか、もう一度録音してください。', true);
+  }
+}
+
+function revealReport() {
+  requestAnimationFrame(() => {
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('result').scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+    $('result').focus({ preventScroll: true });
+  });
+}
+
+const METERS = [
+  ['height', '話す高さ', '低い', '高い'],
+  ['bright', '明るさ', '深い', '明るい'],
+  ['project', '通り', '穏やか', 'よく通る'],
+  ['breath', '息っぽさ', 'クリア', 'ハスキー'],
+  ['rough', 'ざらつき', 'なめらか', 'ざらざら'],
+  ['steady', '安定', '揺らぎあり', 'まっすぐ'],
+  ['inton', '抑揚', '平坦', '豊か'],
+  ['pace', '話す速さ', 'ゆっくり', '速い'],
+  ['range', '音域', '狭い', '広い']
+];
+
+// 共有リンクから開いても同じ判定になるよう、整数にそろえてから使う
+function mergeScores() {
+  const m = rawScores();
+  Object.keys(m).forEach(k => { if (m[k] !== undefined) m[k] = Math.round(m[k]); });
+  return m;
+}
+
+function rawScores() {
+  const h = results.hold, r = results.read, gl = results.glide;
+  const both = k => {
+    const v = [h, r].filter(Boolean).map(t => Math.round(t.scores[k]));
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : undefined;
+  };
+  const voice = h || r;
+  return {
+    height: (r || h || gl).scores.height,
+    bright: both('bright'), project: both('project'),
+    breath: voice ? voice.scores.breath : undefined,
+    rough: h ? h.scores.rough : undefined,
+    steady: voice ? voice.scores.steady : undefined,
+    inton: r ? r.scores.inton : undefined,
+    pace: r ? r.scores.pace : undefined,
+    range: gl ? gl.scores.range : undefined
+  };
+}
+
+function talkStyle(m) {
+  if (m.inton === undefined || m.pace === undefined) return null;
+  const lively = m.inton >= 45, fast = m.pace >= 55;
+  if (lively && fast) return { name: 'テンポよく弾む語り', text: '話し方はテンポがよく、高さの動きも大きいので、聞き手を引っぱる力があります。' };
+  if (lively) return { name: '表情豊かな語り', text: '話し方はゆとりがあり、高さの動きも大きいので、言葉の感情が伝わりやすいです。' };
+  if (fast) return { name: 'てきぱき伝える語り', text: '話し方はテンポがよく、高さの動きは控えめなので、要点を手早く伝える印象です。' };
+  return { name: '落ち着いた語り', text: '話し方はゆとりがあり、高さの動きも控えめなので、安心感のある印象です。' };
+}
+
+// タイトルは「情景＋質感＋象徴」と音域の結びで組み立てる
+const TITLE_SCENES = {
+  low: ['深海の', '夕凪の'],
+  mid: ['月夜の', '木漏れ日の'],
+  high: ['薄明の', '朝焼けの']
+};
+const TITLE_SYMBOLS = {
+  none: ['灯', '風', '鐘'],
+  'テンポよく弾む語り': ['雨だれ', '小鳥', '鈴'],
+  '表情豊かな語り': ['花びら', '旋律', '虹'],
+  'てきぱき伝える語り': ['砂時計', '燕', '流星'],
+  '落ち着いた語り': ['湖', '帆船', '灯台']
+};
+function poeticTitle(m, style) {
+  const h = results.hold, gl = results.glide;
+  const hasVoice = m.breath !== undefined;
+  let ending = null;
+  if (gl) ending = m.range >= 58 ? '空の果てまで' : m.range < 10 ? '掌のなかに' : null;
+  if (!hasVoice) {
+    if (m.range >= 58) return ['空の果てまで', '届く声'];
+    if (m.range < 10) return ['掌のなかで', 'ひらく声'];
+    return ['山あいを', 'めぐる声'];
+  }
+  const level = m.height < 38 ? 'low' : m.height < 65 ? 'mid' : 'high';
+  const scene = TITLE_SCENES[level][m.bright >= 50 ? 1 : 0];
+  let texture = '澄みわたる';
+  if (h && h.vibrato) texture = 'ゆらめく';
+  else if (m.rough !== undefined && m.rough >= 55) texture = '砂をふくむ';
+  else if (m.breath >= 65) texture = '霧をまとう';
+  else if (m.breath >= 35) texture = 'やわらかな';
+  else if (m.steady >= 80) texture = '凛とした';
+  const row = TITLE_SYMBOLS[style ? style.name : 'none'];
+  const symbol = row[m.project >= 60 ? 2 : m.project >= 30 ? 1 : 0];
+  const parts = [scene, texture, symbol];
+  if (ending) { parts[2] += '、'; parts.push(ending); }
+  return parts;
+}
+
+function uniqueNotes(list) {
+  return Array.from(new Set(list.map(b => noteName(b.at))));
+}
+
+function findings(m) {
+  const h = results.hold, r = results.read, gl = results.glide;
+  const goods = [], cares = [], drills = [];
+  const good = (t, d) => goods.push({ t, d }), care = (t, d) => cares.push({ t, d });
+  const drill = (t, d) => { if (!drills.some(x => x.t === t) && drills.length < 3) drills.push({ t, d }); };
+
+  if (m.breath !== undefined && m.breath < 35) good('息が効率よく声になっている', '息の雑音が少なく、少ない力で声を保ちやすい傾向です。');
+  if (m.project !== undefined && m.project >= 60) good('言葉が届きやすい', '2〜4 kHzの響きが強く、周囲の音に埋もれにくい声です。');
+  if (m.rough !== undefined && m.rough < 25) good('声の周期がそろっている', 'ジッターとシマーが小さく、なめらかに聞こえる発声です。');
+  if (h && h.sustain >= 15) good('息が長い', '「あー」を' + h.sustain.toFixed(0) + '秒のばせています。長いフレーズでも余裕を持ちやすいです。');
+  if (h && h.vibrato) good('自然なビブラートがある', '毎秒' + h.vibrato.rate.toFixed(1) + '回ほどの揺れがあります。歌では表現の武器になります。');
+  if (m.inton !== undefined && m.inton >= 60) good('抑揚が豊か', '高さの動きが大きく、聞き手を飽きさせにくい話し方です。');
+  if (gl && gl.rangeSt >= 26) good('音域が広い', (gl.rangeSt / 12).toFixed(1) + 'オクターブ出ています。歌える曲の幅が広いです。');
+
+  if (m.breath !== undefined && m.breath >= 65) {
+    care('息が多く混ざっている', '雰囲気のある音色ですが、長く話すと疲れやすくなります。録音の雑音でも高く出ます。');
+    drill('ハミング', '唇を軽く閉じて「んー」と1分。鼻先が振動する感覚を探すと、息が声に変わりやすくなります。');
+  }
+  if (m.project !== undefined && m.project < 30) {
+    care('声が周囲に埋もれやすい', '2〜4 kHzの響きが控えめです。騒がしい場所では聞き返されることがあります。');
+    drill('「にゃーにゃー」発声', '鼻の奥に響かせる感覚で明るく10回。力まずに通りを足す練習です。');
+  }
+  if (m.rough !== undefined && m.rough >= 55) {
+    care('声の周期にばらつきがある', '喉の疲れ、乾燥、起床直後などでも増えます。別の日にも測って比べてください。');
+    drill('ストロー発声', '細いストローをくわえて「うー」と高さを上下させます。喉の負担を抑えて声を整えられます。1回1〜2分が目安です。');
+  }
+  if (h && h.sustain < 8 && h.sustain >= 1) {
+    care('息が短め', 'のばせた時間は' + h.sustain.toFixed(1) + '秒でした。深く吸い直してもう一度測ると、本来の長さがわかります。');
+    drill('「スー」のロングブレス', '息を吸ってから歯の間で「スー」と細く一定に吐きます。のばせる秒数を毎日記録してください。');
+  }
+  if (m.inton !== undefined && m.inton < 30) {
+    care('抑揚が控えめ', '一本調子に聞こえることがあります。文の中で一番伝えたい言葉を決めると変わります。');
+    drill('強調読み', '同じ文を、強調する単語を変えて3通りに読みます。録音して聞き比べると効果がわかります。');
+  }
+  if (r && m.pace !== undefined && m.pace >= 75) {
+    care('話すのが速め', '毎秒' + r.moraRate.toFixed(1) + '拍でした。聞き取りやすいのは毎秒6〜8拍ほどです。');
+    drill('句読点で1拍休む', '「、」で1拍、「。」で2拍の間を入れて読みます。間が増えると言葉が届きます。');
+  }
+  if (r && m.pace !== undefined && m.pace < 25) care('話すのがゆっくりめ', '毎秒' + r.moraRate.toFixed(1) + '拍でした。丁寧ですが、説明の場面では少し間延びして聞こえることがあります。');
+  if (gl && gl.breaks.length) {
+    care('高さが急に跳ぶ位置がある', uniqueNotes(gl.breaks).join('、') + 'あたりです。地声と裏声の切り替わりの可能性があります。');
+    drill('裏返り位置のサイレン', '跳ぶ音の前後を「うー」で小さくゆっくり往復します。音量を下げるとつながりやすくなります。');
+  }
+  if (r && gl && gl.rangeSt >= 7) {
+    const pos = 100 * 12 * Math.log2(r.f0 / gl.low) / gl.rangeSt;
+    if (pos < 12) care('話す高さが音域の下端に近い', '音域の下から' + Math.round(pos) + '%の位置で話しています。低く押さえると喉が疲れやすくなるため、少し上げても楽か試してください。');
+    else if (pos > 45) care('話す高さが音域の上側にある', '音域の下から' + Math.round(pos) + '%の位置で話しています。緊張や音域の測り残しでもこうなります。');
+    else good('話す高さが音域の中で無理のない位置にある', '音域の下から' + Math.round(pos) + '%の位置で話しています。');
+  }
+  if (!drills.length) drill('リップロール', '唇を震わせて「ぶるる」と高さを上下させます。声を出す前の準備に向いています。1分が目安です。');
+  return { goods, cares, drills };
+}
+
+function fillList(id, list) {
+  const ul = $(id); ul.textContent = '';
+  list.forEach(({ t, d }) => {
+    const li = document.createElement('li');
+    const b = document.createElement('b'); b.textContent = t;
+    li.append(b, d);
+    ul.appendChild(li);
+  });
+}
+
+const SUITS = {
+  '澄んで通る声': 'プレゼン、司会、接客、アナウンスなど、はっきり届けたい場面',
+  '深くなめらかな声': 'ナレーション、朗読、商談など、信頼感を大切にしたい場面',
+  '軽やかなエアリー声': '動画配信、音声ガイド、ポップスの歌唱など、親しみを出したい場面',
+  'スモーキーな声': 'ポッドキャスト、ラジオ、ジャズの歌唱など、近い距離で語りかける場面'
+};
+
+function renderReport() {
+  const h = results.hold, r = results.read, gl = results.glide;
+  const voice = h || r;
+  const m = mergeScores();
+  const t = voice ? classify({ breath: m.breath, bright: m.bright }) : null;
+  const style = talkStyle(m);
+  const titleParts = poeticTitle(m, style);
+  const title = titleParts.join('');
+  const heading = $('typeName');
+  heading.textContent = '';
+  titleParts.forEach((part, i) => {
+    if (i) heading.appendChild(document.createElement('wbr'));
+    heading.append(part);
+  });
+  if (r || h) {
+    const v = r || h;
+    $('pitchLine').textContent = t.name + '。' + (style ? style.name + '。' : '') + '高さは' + pitchWord(v.f0) + '（' + Math.round(v.f0) + ' Hz、音名で ' + noteName(v.f0) + ' あたり）';
+  } else {
+    $('pitchLine').textContent = noteName(gl.low) + ' から ' + noteName(gl.high) + ' まで出ています';
+  }
+  $('typeText').textContent = t ? t.text + (style ? style.text : '') : '音色の判定には「のばす声」か「読む声」が必要です。';
+
+  const done = ORDER.filter(k => results[k]).length;
+  const next = ORDER.find(k => !results[k]);
+  $('progressText').textContent = '3つのテストのうち' + done + 'つを反映';
+  $('nextTest').hidden = !next;
+  if (next) $('nextTest').textContent = '「' + TESTS[next].name + '」も測る';
+
+  const ul = $('warns'); ul.textContent = '';
+  ORDER.forEach(k => (warnings[k] || []).forEach(w => {
+    const li = document.createElement('li'); li.textContent = TESTS[k].name + '：' + w; ul.appendChild(li);
+  }));
+
+  const f = findings(m);
+  $('goodBlock').hidden = !f.goods.length;
+  $('careBlock').hidden = !f.cares.length;
+  fillList('goods', f.goods); fillList('cares', f.cares); fillList('drills', f.drills);
+  $('suits').textContent = t ? SUITS[t.name] + 'に向いています。' : '音色の判定が終わると表示します。';
+
+  const box = $('meters'); box.textContent = '';
+  const dots = [];
+  METERS.forEach(([key, label, lo, hi]) => {
+    const val = m[key];
+    if (val === undefined || isNaN(val)) return;
+    const row = document.createElement('div'); row.className = 'meter';
+    const b = document.createElement('b'); b.textContent = label;
+    const wrap = document.createElement('div');
+    const rail = document.createElement('div'); rail.className = 'rail';
+    const dot = document.createElement('div'); dot.className = 'dot'; dot.style.left = '50%';
+    rail.appendChild(dot);
+    const ends = document.createElement('div'); ends.className = 'ends';
+    const l = document.createElement('span'); l.textContent = lo;
+    const hs = document.createElement('span'); hs.textContent = hi;
+    ends.append(l, hs); wrap.append(rail, ends); row.append(b, wrap);
+    row.setAttribute('role', 'img');
+    row.setAttribute('aria-label', label + ' ' + Math.round(val) + ' パーセント、左が' + lo + '、右が' + hi);
+    box.appendChild(row);
+    dots.push([dot, val]);
+  });
+
+  $('ltasBlock').hidden = !voice;
+  if (voice) $('ltas').innerHTML = ltasSvg(voice);
+  renderNumbers();
+
+  $('aiText').hidden = true; $('aiText').textContent = '';
+  if (!document.body.classList.contains('shared')) prepareShare(t ? t.name : '', style, f, title);
+  $('result').hidden = false;
+  requestAnimationFrame(() => dots.forEach(([d, v]) => { d.style.left = v + '%'; }));
+}
+
+function renderNumbers() {
+  const h = results.hold, r = results.read, gl = results.glide;
+  const fmt = (v, d) => (v === undefined || isNaN(v)) ? '測定できず' : v.toFixed(d === undefined ? 1 : d);
+  const body = $('nums'); body.textContent = '';
+  const group = (title, rows) => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th'); th.colSpan = 2; th.scope = 'colgroup'; th.textContent = title;
+    tr.appendChild(th); body.appendChild(tr);
+    rows.forEach(([k, note, v]) => {
+      const row = document.createElement('tr');
+      const a = document.createElement('th'); a.scope = 'row'; a.textContent = k;
+      if (note) { const s = document.createElement('small'); s.textContent = note; a.appendChild(s); }
+      const b = document.createElement('td'); b.textContent = v;
+      row.append(a, b); body.appendChild(row);
+    });
+  };
+  if (h) {
+    const c = h.cycle, fm = h.formants;
+    group('のばす声', [
+      ['のばせた時間', '目安は15秒前後', h.sustain.toFixed(1) + ' 秒'],
+      ['ジッター', '周期の長さのばらつき。目安は1%前後まで', c ? c.jitter.toFixed(2) + ' %' : '測定できず'],
+      ['シマー', '周期ごとの大きさのばらつき。目安は4%前後まで', c ? c.shimmer.toFixed(2) + ' %' : '測定できず'],
+      ['HNR', '声と雑音の比。大きいほどクリア', fmt(h.hnr) + ' dB'],
+      ['CPP', '声の周期のはっきり度。大きいほどクリア', fmt(h.cpp) + ' dB'],
+      ['ビブラート', '毎秒の回数と揺れ幅', h.vibrato ? h.vibrato.rate.toFixed(1) + ' 回 / ' + Math.round(h.vibrato.extent) + ' セント' : '検出なし'],
+      ['共鳴 F1 / F2 / F3', '「あ」の共鳴の山', fm ? [fm.f1, fm.f2, fm.f3].map(v => v ? Math.round(v) : '－').join(' / ') + ' Hz' : '測定できず'],
+      ['声道の長さ', '共鳴の間隔からの推定で、体格の目安', (h.tract && h.f0 < 280) ? '約 ' + h.tract.toFixed(1) + ' cm' : '測定できず'],
+      ['2〜4 kHzの強さ', '低い帯域のピークとの差。大きいほど通る', fmt(h.spr) + ' dB'],
+      ['スペクトルの傾き', '緩やかなほど明るい', fmt(h.tilt) + ' dB/oct']
+    ]);
+  }
+  if (r) {
+    group('読む声', [
+      ['話す高さ', '中央値', Math.round(r.f0) + ' Hz（' + noteName(r.f0) + '）'],
+      ['高さの幅', '話している間の上下の幅', fmt(r.pitchSpan) + ' 半音'],
+      ['抑揚', '高さのばらつき', fmt(r.intonation) + ' 半音'],
+      ['話す速さ', '間を除いて計算。目安は毎秒6〜8拍', r.scores.pace !== undefined ? '毎秒 ' + r.moraRate.toFixed(1) + ' 拍' : '測定できず'],
+      ['間', '0.2秒以上の休み', r.pauses + ' 回（全体の ' + Math.round(r.pauseShare * 100) + '%）'],
+      ['強弱の幅', '声の大きさの変化', fmt(r.dynamics) + ' dB']
+    ]);
+  }
+  if (gl) {
+    const b = uniqueNotes(gl.breaks);
+    group('音域', [
+      ['一番低い音', '', noteName(gl.low) + '（' + Math.round(gl.low) + ' Hz）'],
+      ['一番高い音', '', noteName(gl.high) + '（' + Math.round(gl.high) + ' Hz）'],
+      ['音域の広さ', '', Math.round(gl.rangeSt) + ' 半音（' + (gl.rangeSt / 12).toFixed(1) + ' オクターブ）'],
+      ['高さが急に跳んだ位置', '地声と裏声の境目の候補', b.length ? b.join('、') : 'なし']
+    ]);
+  }
+}
+
+const CURVE_POINTS = 48, CURVE_LO = 70, CURVE_HI = 8000;
+// 1/6オクターブで滑らかにした平均スペクトル
+function smoothSpectrum(a, count) {
+  const out = [];
+  for (let k = 0; k < count; k++) {
+    const f = CURVE_LO * Math.pow(CURVE_HI / CURVE_LO, k / (count - 1));
+    const lo = Math.max(1, Math.round(f * .944 / a.hz)), hi = Math.min(a.ltas.length - 1, Math.max(lo, Math.round(f * 1.06 / a.hz)));
+    let v = 0;
+    for (let b = lo; b <= hi; b++) v += a.ltas[b];
+    out.push([f, toDb(v / (hi - lo + 1))]);
+  }
+  return out;
+}
+
+function ltasSvg(a) {
+  const W = 400, H = 240, L = 30, R = 6, T = 22, B = 24;
+  const fLo = CURVE_LO, fHi = CURVE_HI, dbRange = 60;
+  const px = f => L + (W - L - R) * Math.log(f / fLo) / Math.log(fHi / fLo);
+  let raw = '', top = 0, smooth;
+  if (a.curve) {
+    smooth = a.curve.map((d, i) => [fLo * Math.pow(fHi / fLo, i / (a.curve.length - 1)), -d]);
+  } else {
+    smooth = smoothSpectrum(a, 111);
+    const db = Array.from(a.ltas, toDb);
+    const lo0 = Math.ceil(fLo / a.hz), hi0 = Math.floor(fHi / a.hz);
+    top = Math.max(...db.slice(lo0, hi0));
+    const y = v => T + (H - T - B) * clamp01((top - v) / dbRange);
+    for (let b = lo0; b <= hi0; b++) raw += (raw ? 'L' : 'M') + px(b * a.hz).toFixed(1) + ' ' + y(db[b]).toFixed(1);
+  }
+  const py = v => T + (H - T - B) * clamp01((top - v) / dbRange);
+  const line = smooth.map((p, i) => (i ? 'L' : 'M') + px(p[0]).toFixed(1) + ' ' + py(p[1]).toFixed(1)).join('');
+  let out = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="声の平均スペクトル">';
+  out += '<rect x="' + px(2000) + '" y="' + T + '" width="' + (px(4000) - px(2000)) + '" height="' + (H - T - B) + '" fill="var(--band)"/>';
+  [0, -20, -40, -60].forEach(d => {
+    const y = T + (H - T - B) * (-d / dbRange);
+    out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)"/>';
+    out += '<text x="' + (L - 5) + '" y="' + (y + 4) + '" text-anchor="end">' + (d ? '−' + (-d) : '0') + '</text>';
+  });
+  [[100, '100'], [250, '250'], [500, '500'], [1000, '1k'], [2000, '2k'], [4000, '4k'], [8000, '8k Hz']].forEach(([f, s]) => {
+    const anchor = f === 8000 ? 'end' : 'middle';
+    out += '<text x="' + (f === 8000 ? W - R : px(f)) + '" y="' + (H - 8) + '" text-anchor="' + anchor + '">' + s + '</text>';
+  });
+  if (raw) out += '<path d="' + raw + '" fill="none" stroke="var(--curve-soft)" stroke-width="1"/>';
+  out += '<path d="' + line + '" fill="none" stroke="var(--curve)" stroke-width="2.2" stroke-linejoin="round"/>';
+  if (a.formants) {
+    [['F1', a.formants.f1], ['F2', a.formants.f2], ['F3', a.formants.f3]].forEach(([n, f]) => {
+      if (!f) return;
+      const x = px(f);
+      out += '<line x1="' + x + '" x2="' + x + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--accent)" stroke-dasharray="3 4"/>';
+      out += '<text class="fm" x="' + x + '" y="' + (T - 7) + '" text-anchor="middle">' + n + '</text>';
+    });
+  }
+  return out + '</svg>';
+}
+
+// ---- 共有リンク ----
+// 測定値を数値のまま圧縮してリンクの#以降に入れる。サーバーなしで詳細レポートを再現するため
+const ARTIFACT_URL = 'https://claude.ai/artifact/G5L94hNQrLJ9Gi3YEdRAxA';
+const SHARE_VERSION = 1, NO_VALUE = 65535, OFFSET = 20000;
+const B32 = 'abcdefghijklmnopqrstuvwxyz234567';
+const SHARE_FIELDS = {
+  hold: [['f0', 10], ['sustain', 10], ['hnr', 10], ['cpp', 10], ['spr', 10], ['tilt', 10],
+    ['cycle.jitter', 100], ['cycle.shimmer', 100], ['tract', 10],
+    ['formants.f1', 1], ['formants.f2', 1], ['formants.f3', 1],
+    ['vibrato.rate', 100], ['vibrato.extent', 1],
+    ['scores.height', 1], ['scores.bright', 1], ['scores.project', 1], ['scores.breath', 1], ['scores.rough', 1], ['scores.steady', 1]],
+  read: [['f0', 10], ['pitchSpan', 10], ['intonation', 10], ['moraRate', 10], ['pauses', 1], ['pauseShare', 100], ['dynamics', 10],
+    ['scores.height', 1], ['scores.bright', 1], ['scores.project', 1], ['scores.breath', 1], ['scores.steady', 1], ['scores.inton', 1], ['scores.pace', 1]],
+  glide: [['low', 10], ['high', 10], ['rangeSt', 10], ['breaks.0.at', 10], ['breaks.1.at', 10], ['breaks.2.at', 10], ['scores.height', 1], ['scores.range', 1]]
+};
+
+function b32encode(bytes) {
+  let out = '', buf = 0, bits = 0;
+  for (const b of bytes) {
+    buf = (buf << 8) | b; bits += 8;
+    while (bits >= 5) { out += B32[(buf >> (bits - 5)) & 31]; bits -= 5; }
+    buf &= (1 << bits) - 1;
+  }
+  if (bits) out += B32[(buf << (5 - bits)) & 31];
+  return out;
+}
+function b32decode(text) {
+  const out = [];
+  let buf = 0, bits = 0;
+  for (const ch of text) {
+    const v = B32.indexOf(ch);
+    if (v < 0) return null;
+    buf = (buf << 5) | v; bits += 5;
+    if (bits >= 8) { out.push((buf >> (bits - 8)) & 255); bits -= 8; buf &= (1 << bits) - 1; }
+  }
+  return out;
+}
+const readPath = (obj, path) => path.split('.').reduce((o, k) => (o === undefined || o === null) ? undefined : o[k], obj);
+function writePath(obj, path, value) {
+  const keys = path.split('.');
+  let o = obj;
+  keys.slice(0, -1).forEach((k, i) => {
+    if (o[k] === undefined) o[k] = /^\d+$/.test(keys[i + 1]) ? [] : {};
+    o = o[k];
+  });
+  o[keys[keys.length - 1]] = value;
+}
+
+function encodeShare() {
+  const bytes = [SHARE_VERSION, 0];
+  ORDER.forEach((key, i) => {
+    const res = results[key];
+    if (!res) return;
+    bytes[1] |= 1 << i;
+    SHARE_FIELDS[key].forEach(([path, scale]) => {
+      const v = readPath(res, path);
+      const n = (typeof v === 'number' && isFinite(v))
+        ? Math.min(NO_VALUE - 1, Math.max(0, Math.round(v * scale) + OFFSET)) : NO_VALUE;
+      bytes.push(n >> 8, n & 255);
+    });
+  });
+  const voice = results.hold || results.read;
+  if (voice) {
+    const pts = smoothSpectrum(voice, CURVE_POINTS), top = Math.max(...pts.map(p => p[1]));
+    pts.forEach(p => bytes.push(Math.round(Math.min(60, top - p[1]) * 4)));
+  }
+  bytes.push(bytes.reduce((a, b) => (a + b) & 255, 0));
+  return 'r-' + b32encode(bytes);
+}
+
+function decodeShare(hash) {
+  if (!/^r-[a-z2-7]+$/.test(hash)) return null;
+  const bytes = b32decode(hash.slice(2));
+  if (!bytes || bytes.length < 4 || bytes[0] !== SHARE_VERSION) return null;
+  const flags = bytes[1];
+  if (!flags || flags > 7) return null;
+  let at = 2;
+  const out = {};
+  for (let i = 0; i < ORDER.length; i++) {
+    if (!(flags & (1 << i))) continue;
+    const key = ORDER[i], res = { mode: key, scores: {} };
+    if (at + SHARE_FIELDS[key].length * 2 > bytes.length) return null;
+    SHARE_FIELDS[key].forEach(([path, scale]) => {
+      const n = bytes[at] * 256 + bytes[at + 1];
+      at += 2;
+      if (n !== NO_VALUE) writePath(res, path, (n - OFFSET) / scale);
+    });
+    if (key === 'glide') res.breaks = (res.breaks || []).filter(Boolean);
+    if (res.formants && !res.formants.f3) res.formants.f3 = 0;
+    out[key] = res;
+  }
+  if (flags & 3) {
+    if (at + CURVE_POINTS > bytes.length) return null;
+    const c = bytes.slice(at, at + CURVE_POINTS).map(b => b / 4);
+    at += CURVE_POINTS;
+    (out.hold || out.read).curve = c;
+  }
+  if (at >= bytes.length) return null;
+  let sum = 0;
+  for (let i = 0; i < at; i++) sum = (sum + bytes[i]) & 255;
+  if (sum !== bytes[at]) return null;
+  return out;
+}
+
+function shareBase() {
+  const local = location.protocol !== 'https:' || /claude/i.test(location.hostname);
+  return local ? ARTIFACT_URL : location.origin + location.pathname;
+}
+// Xの文字数の数え方：日本語は1文字2、リンクは長さによらず23
+function xWeight(text) {
+  let w = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0);
+    const light = c <= 0x10FF || (c >= 0x2000 && c <= 0x200D) || (c >= 0x2010 && c <= 0x201F) || (c >= 0x2032 && c <= 0x2037);
+    w += light ? 1 : 2;
+  }
+  return w;
+}
+const X_LIMIT = 280, X_LINK = 24;
+
+function buildShareText(typeName, style, findingsResult, title) {
+  const h = results.hold, r = results.read, gl = results.glide, v = r || h;
+  const head = '私の声は「' + title + '」でした';
+  const tag = '#こえスペクトル';
+  const optional = [];
+  const core = [];
+  if (results.hold || results.read) core.push('声質：' + typeName);
+  if (style) core.push('話し方：' + style.name);
+  if (v) core.push('高さ：' + pitchWord(v.f0) + '（' + Math.round(v.f0) + ' Hz）');
+  if (gl) optional.push('音域：' + noteName(gl.low) + '〜' + noteName(gl.high) + '（' + (gl.rangeSt / 12).toFixed(1) + 'オクターブ）');
+  if (findingsResult.goods[0]) optional.push('強み：' + findingsResult.goods[0].t);
+  const join = list => [head].concat(list).concat(tag).join('\n');
+  let lines = core.concat(optional);
+  while (lines.length > core.length && xWeight(join(lines)) > X_LIMIT - X_LINK) lines.pop();
+  return join(lines);
+}
+
+function refreshShareLink() {
+  const text = $('shareText').value, url = $('shareText').dataset.url;
+  const left = X_LIMIT - xWeight(text) - X_LINK;
+  $('shareCount').textContent = left >= 0 ? 'あと' + left + '文字分（半角換算）' : left * -1 + '文字分（半角換算）オーバーしています';
+  $('shareCount').classList.toggle('over', left < 0);
+  $('shareX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
+}
+
+function prepareShare(typeName, style, findingsResult, title) {
+  const box = $('shareText');
+  box.value = buildShareText(typeName, style, findingsResult, title);
+  box.dataset.url = shareBase() + '#' + encodeShare();
+  refreshShareLink();
+}
+
+async function copyShare() {
+  const box = $('shareText'), text = box.value + '\n' + box.dataset.url, btn = $('shareCopy');
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    ok = true;
+  } catch (e) {
+    const area = document.createElement('textarea');
+    area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+    document.body.appendChild(area); area.select();
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    area.remove();
+  }
+  btn.textContent = ok ? 'コピーしました' : 'コピーできませんでした';
+  setTimeout(() => { btn.textContent = '文章とリンクをコピー'; }, 2200);
+}
+
+function openSharedFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash.startsWith('r-')) return;
+  const decoded = decodeShare(hash);
+  if (!decoded) {
+    setStatus('この共有リンクは読み取れませんでした。リンクが途中で切れていないか確認してください。', true);
+    return;
+  }
+  results = decoded; warnings = {};
+  document.body.classList.add('shared');
+  $('again').textContent = '自分の声も測る';
+  renderReport();
+  window.scrollTo({ top: 0 });
+}
+function leaveShared() {
+  document.body.classList.remove('shared');
+  $('again').textContent = '最初からやり直す';
+  results = {}; warnings = {};
+  $('result').hidden = true;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+  fitCanvas();
+  selectTest('hold');
+  window.scrollTo({ top: 0 });
+}
+
+function numbersForClaude() {
+  const round = v => (typeof v === 'number' && isFinite(v)) ? +v.toFixed(2) : undefined;
+  const h = results.hold, r = results.read, gl = results.glide, out = {};
+  if (h) out.のばす声 = {
+    基本周波数Hz: round(h.f0), のばせた秒数: round(h.sustain),
+    ジッター百分率: h.cycle ? round(h.cycle.jitter) : undefined, シマー百分率: h.cycle ? round(h.cycle.shimmer) : undefined,
+    HNR_dB: round(h.hnr), CPP_dB: round(h.cpp), スペクトル傾きdB毎オクターブ: round(h.tilt),
+    高域ピーク差dB: round(h.spr), ビブラート: h.vibrato ? { 毎秒回数: h.vibrato.rate, 幅セント: round(h.vibrato.extent) } : 'なし'
+  };
+  if (r) out.読む声 = {
+    基本周波数Hz: round(r.f0), 高さの幅半音: round(r.pitchSpan), 抑揚半音: round(r.intonation),
+    話す速さ毎秒拍: r.scores.pace !== undefined ? round(r.moraRate) : undefined, 間の回数: r.pauses, 強弱dB: round(r.dynamics)
+  };
+  if (gl) out.音域 = {
+    最低音: noteName(gl.low), 最高音: noteName(gl.high), 半音数: Math.round(gl.rangeSt), 高さが跳んだ音: uniqueNotes(gl.breaks)
+  };
+  out.判定スコア0から100 = Object.fromEntries(Object.entries(mergeScores()).filter(([, v]) => v !== undefined).map(([k, v]) => [k, Math.round(v)]));
+  out.声のタイトル = $('typeName').textContent;
+  const tm = mergeScores();
+  if (tm.breath !== undefined) out.判定タイプ = classify(tm).name;
+  return out;
+}
+
+async function askClaude() {
+  const btn = $('aiBtn'), text = $('aiText');
+  btn.disabled = true;
+  text.hidden = false; text.textContent = '解説を作っています';
+  const prompt = '次はスマホのマイクで録音した声の音響測定値です。ボイストレーナーの立場で、日本語の話し言葉で解説してください。\n'
+    + '条件：数値の組み合わせから読み取れることを具体的に書く。600字以内。見出しや記号の装飾は使わない。測定値は録音環境に左右されるので断定しない。'
+    + '病名に触れたり、病気の有無を判断したりしない。最後に今週試すとよいことを1つ挙げる。\n\n'
+    + JSON.stringify(numbersForClaude(), null, 1);
+  try {
+    const res = await sampleFn(prompt, { onText: ({ text: t }) => { text.textContent = t; } });
+    text.textContent = res.text;
+  } catch (e) {
+    if (e && e.code === 'not_granted') { $('aiBox').hidden = true; }
+    else text.textContent = (e && e.code === 'rate_limited')
+      ? '解説の利用回数が上限に達しました。少し時間をおいて試してください。'
+      : '解説を作れませんでした。もう一度試してください。';
+  }
+  btn.disabled = false;
+}
+
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  try {
+    sampleFn = await window.claude.use('sample');
+  } catch (e) { sampleFn = null; }
+  if (sampleFn) {
+    $('aiBox').hidden = false;
+    $('privacy').textContent = '音声はこの端末の中だけで処理し、どこにも送信も保存もしません。解説ボタンを押したときだけ、測定値の数字をClaudeに送ります。';
+  }
+})();
+
+$('rec').addEventListener('click', () => {
+  if (audio) stopRecording(); else startRecording();
+});
+$('aiBtn').addEventListener('click', askClaude);
+$('nextTest').addEventListener('click', () => {
+  const next = ORDER.find(k => !results[k]);
+  if (next) selectTest(next);
+  window.scrollTo({ top: 0 });
+});
+$('shareText').addEventListener('input', refreshShareLink);
+$('shareCopy').addEventListener('click', copyShare);
+$('mineTop').addEventListener('click', leaveShared);
+window.addEventListener('hashchange', openSharedFromHash);
+$('again').addEventListener('click', () => {
+  if (document.body.classList.contains('shared')) { leaveShared(); return; }
+  results = {}; warnings = {};
+  $('result').hidden = true;
+  selectTest('hold');
+  window.scrollTo({ top: 0 });
+});
+$('file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const key = current;
+  setBusy(true);
+  setStatus('ファイルを読み込んでいます');
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx();
+  try {
+    const ab = await file.arrayBuffer();
+    const buf = await ctx.decodeAudioData(ab);
+    ctx.close();
+    run(buf, key);
+  } catch (err) {
+    ctx.close();
+    setBusy(false);
+    setStatus('このファイルは読み込めませんでした。m4a、mp3、wavのいずれかを選んでください。', true);
+  }
+});
+
+function redraw() {
+  fitCanvas();
+  if (audio) return;
+  if (shown) drawResultSpec(shown); else drawIdle();
+}
+let resizeT = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(redraw, 150);
+});
+drawTicks();
+fitCanvas();
+selectTest('hold');
+openSharedFromHash();
+</script>
+</body>
+</html>
