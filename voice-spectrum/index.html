@@ -1128,7 +1128,7 @@ function findings(m) {
   if (h && h.sustain >= 15) good('息が長い', '「あー」を' + h.sustain.toFixed(0) + '秒のばせています。長いフレーズでも余裕を持ちやすいです。');
   if (h && h.vibrato) good('自然なビブラートがある', '毎秒' + h.vibrato.rate.toFixed(1) + '回ほどの揺れがあります。歌では表現の武器になります。');
   if (m.inton !== undefined && m.inton >= 60) good('抑揚が豊か', '高さの動きが大きく、聞き手を飽きさせにくい話し方です。');
-  if (gl && gl.rangeSt >= 26) good('音域が広い', (gl.rangeSt / 12).toFixed(1) + 'オクターブ出ています。歌える曲の幅が広いです。');
+  if (gl && gl.rangeSt >= 26) good('音域が広い', (gl.rangeSt / 12).toFixed(1) + 'オクターブ出ています（裏声を含みます）。歌える曲の幅が広いです。');
 
   if (m.breath !== undefined && m.breath >= 65) {
     care('息が多く混ざっている', '雰囲気のある音色ですが、長く話すと疲れやすくなります。録音の雑音でも高く出ます。');
@@ -1303,7 +1303,7 @@ function renderNumbers() {
     group('音域', [
       ['一番低い音', '', noteName(gl.low) + '（' + Math.round(gl.low) + ' Hz）'],
       ['一番高い音', '', noteName(gl.high) + '（' + Math.round(gl.high) + ' Hz）'],
-      ['音域の広さ', '', Math.round(gl.rangeSt) + ' 半音（' + (gl.rangeSt / 12).toFixed(1) + ' オクターブ）'],
+      ['音域の広さ', '裏声を含む幅です', Math.round(gl.rangeSt) + ' 半音（' + (gl.rangeSt / 12).toFixed(1) + ' オクターブ）'],
       ['高さが急に跳んだ位置', '地声と裏声の境目の候補', b.length ? b.join('、') : 'なし']
     ]);
   }
