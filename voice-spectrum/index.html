@@ -41,6 +41,9 @@ h1,h2,h3,p{margin:0}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(2.1rem,9vw,3.4rem);line-height:1.15;letter-spacing:.01em}
 .lead{margin-top:.4rem;color:var(--muted)}
 
+.spec-fig{margin:0 0 1rem}
+.spec-fig figcaption{font-weight:700;margin-bottom:.3rem}
+.spec-fig canvas{display:block;width:100%;height:auto;border-radius:.5rem;background:#120E33}
 .scope{position:relative;margin:1.1rem -1rem 0;height:clamp(13rem,40vh,21rem);background:#120E33;overflow:hidden}
 .scope canvas{display:block;width:100%;height:100%}
 .tick{position:absolute;left:.6rem;transform:translateY(-50%);font-size:.72rem;line-height:1;color:#fff;
@@ -197,6 +200,12 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
     <section class="block">
       <h3>声の特徴</h3>
       <div id="meters"></div>
+    </section>
+
+    <section class="block" id="specBlock" hidden>
+      <h3>スペクトログラム</h3>
+      <div id="specList"></div>
+      <p class="cap">横が時間、縦が周波数（下が低い音、上が高い音）、色が強さです。白い線は声の高さの動きです。</p>
     </section>
 
     <section class="block" id="ltasBlock">
@@ -684,6 +693,7 @@ function pitchWord(f) {
 
 const $ = id => document.getElementById(id);
 const canvas = $('spec'), g = canvas.getContext('2d');
+window.g2d = g;
 const STOPS = [[0, 18, 14, 51], [.35, 59, 42, 158], [.62, 201, 44, 142], [.82, 255, 122, 69], [1, 255, 236, 130]];
 const LUT = new Uint8ClampedArray(256 * 3);
 for (let i = 0; i < 256; i++) {
@@ -755,6 +765,23 @@ function fitCanvas() {
   canvas.width = Math.max(1, Math.round(r.width * d));
   canvas.height = Math.max(1, Math.round(r.height * d));
 }
+function renderSpecList() {
+  const box = $('specList'); box.textContent = '';
+  let n = 0;
+  ORDER.forEach(k => {
+    const a = results[k];
+    if (!a || !a.spec) return;
+    const fig = document.createElement('figure'); fig.className = 'spec-fig';
+    const cap = document.createElement('figcaption'); cap.textContent = TESTS[k].name;
+    const cv = document.createElement('canvas');
+    cv.width = 900; cv.height = 360;
+    cv.setAttribute('role', 'img');
+    cv.setAttribute('aria-label', TESTS[k].name + 'のスペクトログラム。白い線は声の高さの動きです');
+    drawResultSpec(a, cv);
+    fig.append(cap, cv); box.appendChild(fig); n++;
+  });
+  $('specBlock').hidden = !n;
+}
 function drawTicks() {
   const box = $('ticks'); box.textContent = '';
   [[250, '250 Hz'], [500, '500'], [1000, '1 kHz'], [2000, '2 k'], [4000, '4 k']].forEach(([f, label]) => {
@@ -764,7 +791,7 @@ function drawTicks() {
     box.appendChild(el);
   });
 }
-function paintGrid(w, h, value) {
+function paintGrid(w, h, value, g = window.g2d) {
   const img = g.createImageData(w, h), d = img.data;
   for (let y = 0; y < h; y++) {
     const row = 1 - y / (h - 1);
@@ -800,7 +827,8 @@ function drawIdle() {
   paintGrid(w, h, value);
   canvas.setAttribute('aria-label', '声の周波数を時間に沿って色で示すスペクトログラムの見本');
 }
-function drawResultSpec(a) {
+function drawResultSpec(a, cv = canvas) {
+  const g = cv.getContext('2d'), canvas = cv;
   const w = canvas.width, h = canvas.height, top = a.specMax, range = 70;
   const value = (t, r) => {
     const fr = Math.min(a.frames - 1, Math.floor(t * a.frames));
@@ -808,7 +836,7 @@ function drawResultSpec(a) {
     const v = a.spec[fr * ROWS + l] * (1 - u) + a.spec[fr * ROWS + l + 1] * u;
     return Math.pow(clamp01((v - top + range) / range), 1.4);
   };
-  paintGrid(w, h, value);
+  paintGrid(w, h, value, g);
   g.lineWidth = Math.max(2, h / 130); g.strokeStyle = '#FFFFFF'; g.lineJoin = 'round';
   g.beginPath();
   let pen = false;
@@ -1216,6 +1244,7 @@ function renderReport() {
     dots.push([dot, val]);
   });
 
+  renderSpecList();
   $('ltasBlock').hidden = !voice;
   if (voice) $('ltas').innerHTML = ltasSvg(voice);
   renderNumbers();
