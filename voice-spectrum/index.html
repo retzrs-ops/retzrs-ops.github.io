@@ -141,8 +141,7 @@ td small{display:block;font-size:.78rem;font-weight:500;line-height:1.4;color:va
 .scope-pick label{display:flex;gap:.55rem;align-items:flex-start;padding:.45rem 0;line-height:1.5;cursor:pointer}
 .scope-pick input{margin:.25rem 0 0;width:1.1rem;height:1.1rem;accent-color:var(--accent);flex:none}
 .scope-pick small{display:block;color:var(--muted);font-size:.84rem}
-body.shared-data #goodBlock,body.shared-data #careBlock,body.shared-data #suitsBlock,body.shared-data #drillBlock,body.shared-data #meterBlock,
-body.shared-data #blurBlock,body.shared-data #avgBlock,body.shared-data #genderBlock,body.shared-data .progress,body.shared-data #typeText{display:none}
+body.shared-summary #ltasBlock,body.shared-summary #numsBlock{display:none}
 .shared-note{display:none;margin-top:.9rem;padding:.8rem;background:var(--surface);border-radius:.5rem}
 .shared-note button{margin-top:.6rem;width:100%;background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent)}
 body.shared .shared-note{display:block}
@@ -275,8 +274,8 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
       <h3>Xで共有</h3>
       <fieldset class="scope-pick">
         <legend>公開する範囲</legend>
-        <label><input type="radio" name="shareScope" value="all" checked><span>全体<small>タイトル、判定、評価、測定値</small></span></label>
-        <label><input type="radio" name="shareScope" value="data"><span>スペクトル以降のデータだけ<small>周波数の分布と測定値</small></span></label>
+        <label><input type="radio" name="shareScope" value="all" checked><span>全体<small>タイトル、判定、評価、周波数の分布、測定値</small></span></label>
+        <label><input type="radio" name="shareScope" value="summary"><span>周波数の分布の前まで<small>タイトル、判定、評価。周波数の分布と測定値は含みません</small></span></label>
       </fieldset>
       <label class="share-label" for="shareText">投稿する文章</label>
       <textarea id="shareText"></textarea>
@@ -285,7 +284,7 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
         <a id="shareX" target="_blank" rel="noopener noreferrer">Xに投稿する</a>
         <button id="shareCopy" type="button">文章とリンクをコピー</button>
       </div>
-      <p class="cap">投稿には選んだ範囲のレポートのリンクが付きます。音声とスペクトログラム画像は入りません。リンクを知っている人は誰でも読めます。範囲を変えると、投稿する文章は作り直されます。</p>
+      <p class="cap">投稿には選んだ範囲のレポートのリンクが付きます。音声とスペクトログラム画像は入りません。リンクを知っている人は誰でも読めます。</p>
     </section>
 
     <div class="notes">
@@ -1326,20 +1325,7 @@ function renderGender(m) {
   const box = $('genderCards'); box.textContent = '';
   if (v) box.append(genderCard(VOICE_REF.male, v.f0, m), genderCard(VOICE_REF.female, v.f0, m));
 }
-function renderDataReport() {
-  const h = results.hold, r = results.read, gl = results.glide, voice = h || r, v = r || h;
-  $('typeName').textContent = '声の測定データ';
-  $('pitchLine').textContent = v ? '話す高さ ' + Math.round(v.f0) + ' Hz（' + noteName(v.f0) + '）' : noteName(gl.low) + ' から ' + noteName(gl.high);
-  $('warns').textContent = '';
-  $('specBlock').hidden = true;
-  $('ltasBlock').hidden = !voice;
-  if (voice) $('ltas').innerHTML = ltasSvg(voice);
-  renderNumbers();
-  $('result').hidden = false;
-}
-
 function renderReport() {
-  if (document.body.classList.contains('shared-data')) { renderDataReport(); return; }
   const h = results.hold, r = results.read, gl = results.glide;
   const voice = h || r;
   const m = mergeScores();
@@ -1403,9 +1389,10 @@ function renderReport() {
   renderBlur();
   renderGender(m);
   renderSpecList();
-  $('ltasBlock').hidden = !voice;
-  if (voice) $('ltas').innerHTML = ltasSvg(voice);
-  renderNumbers();
+  const hasSpectrum = voice && (voice.ltas || voice.curve);
+  $('ltasBlock').hidden = !hasSpectrum;
+  if (hasSpectrum) $('ltas').innerHTML = ltasSvg(voice);
+  if (!document.body.classList.contains('shared-summary')) renderNumbers();
 
   $('aiText').hidden = true; $('aiText').textContent = '';
   if (!document.body.classList.contains('shared')) prepareShare(t ? t.name : '', style, f, title);
@@ -1569,23 +1556,27 @@ function writePath(obj, path, value) {
   o[keys[keys.length - 1]] = value;
 }
 
-// 2バイト目は対象テスト、3バイト目は公開範囲（1はデータだけ）。データだけの場合は判定スコアを入れない
+// 周波数の分布の前までを公開するときは、その後ろだけで使う値をリンクに入れない
+const SUMMARY_SKIP = ['cpp', 'spr', 'tilt', 'tract', 'formants.f1', 'formants.f2', 'formants.f3',
+  'pitchSpan', 'intonation', 'pauses', 'pauseShare', 'dynamics'];
+const SCOPE_ALL = 0, SCOPE_RETIRED = 1, SCOPE_SUMMARY = 2; // 1は廃止した「データだけ」
+// 2バイト目は対象テスト、3バイト目は公開範囲
 function encodeShare(scope) {
-  const dataOnly = scope === 'data';
-  const bytes = [SHARE_VERSION, 0, dataOnly ? 1 : 0];
+  const summary = scope === 'summary';
+  const bytes = [SHARE_VERSION, 0, summary ? SCOPE_SUMMARY : SCOPE_ALL];
   ORDER.forEach((key, i) => {
     const res = results[key];
     if (!res) return;
     bytes[1] |= 1 << i;
     SHARE_FIELDS[key].forEach(([path, scale]) => {
-      const v = dataOnly && path.startsWith('scores.') ? undefined : readPath(res, path);
+      const v = summary && SUMMARY_SKIP.includes(path) ? undefined : readPath(res, path);
       const n = (typeof v === 'number' && isFinite(v))
         ? Math.min(NO_VALUE - 1, Math.max(0, Math.round(v * scale) + OFFSET)) : NO_VALUE;
       bytes.push(n >> 8, n & 255);
     });
   });
   const voice = results.hold || results.read;
-  if (voice) {
+  if (voice && !summary) {
     const pts = smoothSpectrum(voice, CURVE_POINTS), top = Math.max(...pts.map(p => p[1]));
     pts.forEach(p => bytes.push(Math.round(Math.min(60, top - p[1]) * 4)));
   }
@@ -1601,7 +1592,14 @@ function decodeShare(hash) {
   if (!flags || flags > 7) return null;
   let at = 2;
   const out = {};
-  if (bytes[0] >= 2) { out.dataOnly = bytes[2] === 1; at = 3; }
+  let summary = false;
+  if (bytes[0] >= 2) {
+    if (bytes[2] === SCOPE_RETIRED) return { retired: true };
+    if (bytes[2] !== SCOPE_ALL && bytes[2] !== SCOPE_SUMMARY) return null;
+    summary = bytes[2] === SCOPE_SUMMARY;
+    out.summary = summary;
+    at = 3;
+  }
   for (let i = 0; i < ORDER.length; i++) {
     if (!(flags & (1 << i))) continue;
     const key = ORDER[i], res = { mode: key, scores: {} };
@@ -1615,7 +1613,7 @@ function decodeShare(hash) {
     if (res.formants && !res.formants.f3) res.formants.f3 = 0;
     out[key] = res;
   }
-  if (flags & 3) {
+  if ((flags & 3) && !summary) {
     if (at + CURVE_POINTS > bytes.length) return null;
     const c = bytes.slice(at, at + CURVE_POINTS).map(b => b / 4);
     at += CURVE_POINTS;
@@ -1644,17 +1642,6 @@ function xWeight(text) {
 }
 const X_LIMIT = 280, X_LINK = 24;
 
-function buildDataText() {
-  const h = results.hold, r = results.read, gl = results.glide, v = r || h;
-  const lines = ['こえスペクトルで声を測定しました'];
-  if (v) lines.push('話す高さ：' + Math.round(v.f0) + ' Hz（' + noteName(v.f0) + '）');
-  if (h) lines.push('のばせた時間：' + h.sustain.toFixed(1) + '秒');
-  if (r && r.moraRate >= 3 && r.moraRate <= 12) lines.push('話す速さ：毎秒' + r.moraRate.toFixed(1) + '拍');
-  if (gl) lines.push('音域：' + noteName(gl.low) + '〜' + noteName(gl.high) + '（' + (gl.rangeSt / 12).toFixed(1) + 'オクターブ）');
-  lines.push('#こえスペクトル');
-  return lines.join('\n');
-}
-
 function buildShareText(typeName, style, findingsResult, title) {
   const h = results.hold, r = results.read, gl = results.glide, v = r || h;
   const head = '私の声は「' + title + '」でした';
@@ -1680,18 +1667,16 @@ function refreshShareLink() {
   $('shareX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
 }
 
-let shareArgs = null;
-function prepareShare(typeName, style, findingsResult, title) {
-  shareArgs = [typeName, style, findingsResult, title];
-  applyShareScope();
+function shareScope() {
+  return document.querySelector('input[name="shareScope"]:checked').value;
 }
-function applyShareScope() {
-  if (!shareArgs) return;
-  const scope = document.querySelector('input[name="shareScope"]:checked').value;
-  const box = $('shareText');
-  box.value = scope === 'data' ? buildDataText() : buildShareText(...shareArgs);
-  box.dataset.url = shareBase() + '#' + encodeShare(scope);
+function updateShareUrl() {
+  $('shareText').dataset.url = shareBase() + '#' + encodeShare(shareScope());
   refreshShareLink();
+}
+function prepareShare(typeName, style, findingsResult, title) {
+  $('shareText').value = buildShareText(typeName, style, findingsResult, title);
+  updateShareUrl();
 }
 
 async function copyShare() {
@@ -1719,17 +1704,21 @@ function openSharedFromHash() {
     setStatus('この共有リンクは読み取れませんでした。リンクが途中で切れていないか確認してください。', true);
     return;
   }
-  const dataOnly = decoded.dataOnly;
-  delete decoded.dataOnly;
+  if (decoded.retired) {
+    setStatus('この共有リンクは、終了した公開範囲で作られたため表示できません。', true);
+    return;
+  }
+  const summary = decoded.summary;
+  delete decoded.summary;
   results = decoded; warnings = {};
   document.body.classList.add('shared');
-  document.body.classList.toggle('shared-data', !!dataOnly);
+  document.body.classList.toggle('shared-summary', !!summary);
   $('again').textContent = '自分の声も測る';
   renderReport();
   window.scrollTo({ top: 0 });
 }
 function leaveShared() {
-  document.body.classList.remove('shared', 'shared-data');
+  document.body.classList.remove('shared', 'shared-summary');
   $('again').textContent = '最初からやり直す';
   results = {}; warnings = {};
   $('result').hidden = true;
@@ -1803,7 +1792,7 @@ $('nextTest').addEventListener('click', () => {
   window.scrollTo({ top: 0 });
 });
 $('shareText').addEventListener('input', refreshShareLink);
-document.querySelectorAll('input[name="shareScope"]').forEach(el => el.addEventListener('change', applyShareScope));
+document.querySelectorAll('input[name="shareScope"]').forEach(el => el.addEventListener('change', updateShareUrl));
 $('shareCopy').addEventListener('click', copyShare);
 $('mineTop').addEventListener('click', leaveShared);
 window.addEventListener('hashchange', openSharedFromHash);
