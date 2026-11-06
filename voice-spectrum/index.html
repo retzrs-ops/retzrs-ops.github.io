@@ -119,6 +119,30 @@ td{white-space:normal;min-width:6.5em}
 #aiBtn{width:100%;background:var(--ink);color:var(--bg);border:2px solid var(--ink)}
 #aiBtn:disabled{opacity:.55;cursor:wait}
 #aiText{margin-top:.8rem;white-space:pre-wrap}
+.refbar{padding:.55rem 0}
+.refbar .center{position:absolute;left:50%;top:-.3rem;bottom:-.3rem;width:2px;margin-left:-1px;background:var(--ink)}
+.refbar .ends{margin:.35rem .5rem 0}
+.devline{margin-top:.3rem;font-weight:700;line-height:1.5}
+.refhead{display:flex;justify-content:space-between;gap:.8rem;align-items:baseline}
+.refhead b{font-weight:700}
+.refhead span{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.refbar .rail{margin:.55rem .5rem .35rem}
+.refbar .band{position:absolute;top:0;bottom:0;background:var(--curve-soft);border-radius:.3rem}
+.refbar .dot{transition:none}
+.refstate{font-size:.85rem;color:var(--muted);line-height:1.5}
+.gcard{background:var(--surface);border-radius:.5rem;padding:.8rem}
+.gcard+.gcard{margin-top:.7rem}
+.gcard h4{margin:0 0 .3rem;font-size:1.05rem;font-weight:700}
+.gcard p{margin:0}
+.gcard .sub{margin-top:.2rem;font-size:.92rem;color:var(--muted)}
+td small{display:block;font-size:.78rem;font-weight:500;line-height:1.4;color:var(--muted)}
+.scope-pick{border:0;margin:0 0 .9rem;padding:0}
+.scope-pick legend{font-weight:700;padding:0;margin-bottom:.3rem}
+.scope-pick label{display:flex;gap:.55rem;align-items:flex-start;padding:.45rem 0;line-height:1.5;cursor:pointer}
+.scope-pick input{margin:.25rem 0 0;width:1.1rem;height:1.1rem;accent-color:var(--accent);flex:none}
+.scope-pick small{display:block;color:var(--muted);font-size:.84rem}
+body.shared-data #goodBlock,body.shared-data #careBlock,body.shared-data #suitsBlock,body.shared-data #drillBlock,body.shared-data #meterBlock,
+body.shared-data #blurBlock,body.shared-data #avgBlock,body.shared-data #genderBlock,body.shared-data .progress,body.shared-data #typeText{display:none}
 .shared-note{display:none;margin-top:.9rem;padding:.8rem;background:var(--surface);border-radius:.5rem}
 .shared-note button{margin-top:.6rem;width:100%;background:var(--accent);color:var(--accent-ink);border:2px solid var(--accent)}
 body.shared .shared-note{display:block}
@@ -189,19 +213,39 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
       <ul class="finds" id="cares"></ul>
     </section>
 
-    <section class="block">
+    <section class="block" id="suitsBlock">
       <h3>向いている場面</h3>
       <p id="suits"></p>
     </section>
 
-    <section class="block">
+    <section class="block" id="drillBlock">
       <h3>おすすめの練習</h3>
       <ul class="finds" id="drills"></ul>
     </section>
 
-    <section class="block">
+    <section class="block" id="meterBlock">
       <h3>声の特徴</h3>
       <div id="meters"></div>
+    </section>
+
+    <section class="block" id="avgBlock" hidden>
+      <h3>平均との比較</h3>
+      <div id="avgBars"></div>
+      <p class="cap">線の中央が平均です。左右は平均からの差を%で示し、濃い帯が平均的な範囲です。数値は目安で、±100%より外の値は端に表示します。</p>
+    </section>
+
+    <section class="block" id="blurBlock" hidden>
+      <h3>声のブレからわかること</h3>
+      <div id="blurBars"></div>
+      
+      <p id="blurText"></p>
+      <p class="cap">小さな声や録音環境でも値は大きくなります。この比較は参考で、声の健康状態を判断するものではありません。</p>
+    </section>
+
+    <section class="block" id="genderBlock" hidden>
+      <h3>男性の声として／女性の声として</h3>
+      <div id="genderCards"></div>
+      <p class="cap">同じ声を2つの基準で見た結果で、性別を判定するものではありません。平均は研究や年齢によって変わります。声のブレには性別による差がないとする研究もあるため、ここでは高さと息の長さだけを分けています。</p>
     </section>
 
     <section class="block" id="specBlock" hidden>
@@ -216,7 +260,7 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
       <p class="cap">濃い線が声全体の平均スペクトルです。F1〜F3は共鳴の山で、母音によって動きます。黄色の帯は声の通りに関わる2〜4 kHzです。</p>
     </section>
 
-    <section class="block">
+    <section class="block" id="numsBlock">
       <h3>測定値</h3>
       <div class="table-wrap"><table class="tg"><tbody id="nums"></tbody></table></div>
     </section>
@@ -229,6 +273,11 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
 
     <section class="block" id="shareBlock">
       <h3>Xで共有</h3>
+      <fieldset class="scope-pick">
+        <legend>公開する範囲</legend>
+        <label><input type="radio" name="shareScope" value="all" checked><span>全体<small>タイトル、判定、評価、測定値</small></span></label>
+        <label><input type="radio" name="shareScope" value="data"><span>スペクトル以降のデータだけ<small>周波数の分布と測定値</small></span></label>
+      </fieldset>
       <label class="share-label" for="shareText">投稿する文章</label>
       <textarea id="shareText"></textarea>
       <p id="shareCount"></p>
@@ -236,7 +285,7 @@ body.shared #shareBlock,body.shared #aiBox,body.shared #nextTest{display:none}
         <a id="shareX" target="_blank" rel="noopener noreferrer">Xに投稿する</a>
         <button id="shareCopy" type="button">文章とリンクをコピー</button>
       </div>
-      <p class="cap">投稿には詳細レポートのリンクが付きます。リンクには測定値と判定結果が入り、音声は入りません。リンクを知っている人は誰でも読めます。</p>
+      <p class="cap">投稿には選んだ範囲のレポートのリンクが付きます。音声とスペクトログラム画像は入りません。リンクを知っている人は誰でも読めます。範囲を変えると、投稿する文章は作り直されます。</p>
     </section>
 
     <div class="notes">
@@ -994,7 +1043,7 @@ async function run(buffer, key) {
     if (peak < .03) w.push('録音の音量が小さいため、結果が不安定な場合があります。');
     if (res.snr < 15) w.push('周囲の雑音が大きく、息っぽさが実際より高く出ている可能性があります。');
     if (key === 'hold' && res.sustain < 3) w.push('のばした時間が短いため、喉の安定は測れていない場合があります。');
-    if (key === 'hold' && !res.cycle) w.push('周期を十分に追えなかったため、ジッターとシマーは出せませんでした。');
+    if (key === 'hold' && !res.cycle) w.push('声を十分に追えなかったため、高さと大きさの細かいブレは出せませんでした。');
     if (key === 'read' && res.scores.pace === undefined) w.push('話す速さは、文章を最後まで読んだ声でないと計算できません。');
     if (key === 'glide' && res.rangeSt < 7) w.push('高さの動きが小さいため、実際の音域より狭く出ています。');
     results[key] = res;
@@ -1124,7 +1173,7 @@ function findings(m) {
 
   if (m.breath !== undefined && m.breath < 35) good('息が効率よく声になっている', '息の雑音が少なく、少ない力で声を保ちやすい傾向です。');
   if (m.project !== undefined && m.project >= 60) good('言葉が届きやすい', '2〜4 kHzの響きが強く、周囲の音に埋もれにくい声です。');
-  if (m.rough !== undefined && m.rough < 25) good('声の周期がそろっている', 'ジッターとシマーが小さく、なめらかに聞こえる発声です。');
+  if (m.rough !== undefined && m.rough < 25) good('声のブレが小さい', '高さと大きさの細かいブレが小さく、なめらかに聞こえる発声です。');
   if (h && h.sustain >= 15) good('息が長い', '「あー」を' + h.sustain.toFixed(0) + '秒のばせています。長いフレーズでも余裕を持ちやすいです。');
   if (h && h.vibrato) good('自然なビブラートがある', '毎秒' + h.vibrato.rate.toFixed(1) + '回ほどの揺れがあります。歌では表現の武器になります。');
   if (m.inton !== undefined && m.inton >= 60) good('抑揚が豊か', '高さの動きが大きく、聞き手を飽きさせにくい話し方です。');
@@ -1139,7 +1188,7 @@ function findings(m) {
     drill('「にゃーにゃー」発声', '鼻の奥に響かせる感覚で明るく10回。力まずに通りを足す練習です。');
   }
   if (m.rough !== undefined && m.rough >= 55) {
-    care('声の周期にばらつきがある', '喉の疲れ、乾燥、起床直後などでも増えます。別の日にも測って比べてください。');
+    care('声の細かいブレが大きめ', '喉の疲れ、乾燥、起床直後などでも増えます。別の日にも測って比べてください。');
     drill('ストロー発声', '細いストローをくわえて「うー」と高さを上下させます。喉の負担を抑えて声を整えられます。1回1〜2分が目安です。');
   }
   if (h && h.sustain < 8 && h.sustain >= 1) {
@@ -1186,7 +1235,111 @@ const SUITS = {
   'スモーキーな声': 'ポッドキャスト、ラジオ、ジャズの歌唱など、近い距離で語りかける場面'
 };
 
+// 平均と平均的な範囲（目安）。中央からの差を%で表示するために使う
+const AVERAGE = {
+  jitter: { mean: .5, lo: .26, hi: 1.04, unit: ' %', digits: 2 },
+  shimmer: { mean: 2.5, lo: 1.9, hi: 3.81, unit: ' %', digits: 2 },
+  hnr: { mean: 17, lo: 12, hi: 21, unit: ' dB', digits: 0 },
+  mora: { mean: 7, lo: 6, hi: 8, unit: ' 拍/秒', digits: 0 },
+  range: { mean: 23, lo: 21, hi: 25, unit: ' 半音', digits: 0 }
+};
+const signedPct = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(Math.round(v)) + '%';
+const devFrom = (v, ref) => 100 * (v / ref.mean - 1);
+function devWord(v, ref) {
+  return '平均より' + signedPct(devFrom(v, ref)) + (v < ref.lo ? '（平均的な範囲より下）' : v > ref.hi ? '（平均的な範囲より上）' : '（平均的な範囲内）');
+}
+function devBar(label, valueText, v, ref) {
+  const dev = devFrom(v, ref), pct = x => 100 * clamp01((x + 100) / 200);
+  const lo = devFrom(ref.lo, ref), hi = devFrom(ref.hi, ref);
+  const row = document.createElement('div'); row.className = 'refbar';
+  const head = document.createElement('div'); head.className = 'refhead';
+  const b = document.createElement('b'); b.textContent = label;
+  const val = document.createElement('span'); val.textContent = valueText;
+  head.append(b, val);
+  const rail = document.createElement('div'); rail.className = 'rail';
+  const band = document.createElement('div'); band.className = 'band';
+  band.style.left = pct(lo) + '%'; band.style.width = (pct(hi) - pct(lo)) + '%';
+  const center = document.createElement('div'); center.className = 'center';
+  const dot = document.createElement('div'); dot.className = 'dot'; dot.style.left = pct(dev) + '%';
+  rail.append(band, center, dot);
+  const ends = document.createElement('div'); ends.className = 'ends';
+  ['−100%', '平均', '+100%'].forEach(t => { const e = document.createElement('span'); e.textContent = t; ends.appendChild(e); });
+  const line = document.createElement('div'); line.className = 'devline'; line.textContent = devWord(v, ref);
+  const st = document.createElement('div'); st.className = 'refstate';
+  const d = ref.digits === undefined ? 0 : ref.digits;
+  st.textContent = '平均 ' + ref.mean.toFixed(d) + (ref.unit || '') + '、平均的な範囲は中央から ' + signedPct(lo) + '〜' + signedPct(hi);
+  row.append(head, rail, ends, line, st);
+  row.setAttribute('role', 'img');
+  row.setAttribute('aria-label', label + ' ' + valueText + '、' + devWord(v, ref));
+  return row;
+}
+function renderAverages() {
+  const h = results.hold, r = results.read, gl = results.glide, rows = [];
+  if (h && !isNaN(h.hnr)) rows.push(devBar('声と雑音の比', h.hnr.toFixed(1) + ' dB', h.hnr, AVERAGE.hnr));
+  if (r && r.moraRate >= 3 && r.moraRate <= 12) rows.push(devBar('話す速さ', r.moraRate.toFixed(1) + ' 拍/秒', r.moraRate, AVERAGE.mora));
+  if (gl) rows.push(devBar('音域の広さ', Math.round(gl.rangeSt) + ' 半音', gl.rangeSt, AVERAGE.range));
+  const box = $('avgBars'); box.textContent = '';
+  rows.forEach(x => box.appendChild(x));
+  $('avgBlock').hidden = !rows.length;
+}
+
+// 参考範囲。jitter、shimmerは一般的な臨床の目安、高さと息の長さは研究報告の平均
+const BLUR = { jitter: 1.04, shimmer: 3.81 };
+const VOICE_REF = {
+  male: { label: '男性', lo: 85, hi: 155, mean: 120, sustain: { mean: 16, lo: 12, hi: 20, unit: ' 秒' }, unit: ' Hz',
+    words: ['重厚で落ち着いた', '深みのある', '自然で聞き取りやすい', '若々しく軽やかな', 'やわらかく中性的な'] },
+  female: { label: '女性', lo: 165, hi: 255, mean: 205, sustain: { mean: 14, lo: 10, hi: 18, unit: ' 秒' }, unit: ' Hz',
+    words: ['クールで中性的な', '落ち着いた大人っぽい', '自然で聞き取りやすい', '明るく親しみやすい', '華やかで可憐な'] }
+};
+function renderBlur() {
+  const c = results.hold && results.hold.cycle;
+  $('blurBlock').hidden = !c;
+  if (!c) return;
+  const box = $('blurBars'); box.textContent = '';
+  box.append(
+    devBar('高さの細かいブレ', c.jitter.toFixed(2) + ' %', c.jitter, AVERAGE.jitter),
+    devBar('大きさの細かいブレ', c.shimmer.toFixed(2) + ' %', c.shimmer, AVERAGE.shimmer)
+  );
+  const pitch = c.jitter > BLUR.jitter, level = c.shimmer > BLUR.shimmer;
+  $('blurText').textContent = !pitch && !level ? '高さも大きさも安定しているので、なめらかに聞こえやすい声です。'
+    : pitch && !level ? '大きさは安定していますが、高さに細かな揺れがあります。少し震えたように聞こえることがあります。'
+      : !pitch ? '高さは安定していますが、大きさに細かな波があります。音量が波打って聞こえることがあります。'
+        : '高さと大きさの両方に細かな揺れがあります。ざらつきやかすれを感じやすい声です。';
+}
+function genderCard(ref, f0, m) {
+  const pos = f0 < ref.lo ? 0 : f0 < ref.mean * .9 ? 1 : f0 <= ref.mean * 1.1 ? 2 : f0 <= ref.hi ? 3 : 4;
+  const posWord = ['低め', 'やや低め', '平均的', 'やや高め', '高め'][pos];
+  const card = document.createElement('div'); card.className = 'gcard';
+  const h4 = document.createElement('h4'); h4.textContent = ref.label + 'の声として';
+  const p = document.createElement('p');
+  p.textContent = ref.label + 'の話し声としては' + posWord + 'です。' + ref.words[pos] + '印象に聞こえやすい高さです。'
+    + (m.project !== undefined && m.project >= 60 ? '声の通りもよいので、言葉が届きやすいです。' : '')
+    + (m.breath !== undefined && m.breath >= 65 ? '息の成分が多く、やわらかさも加わります。' : '');
+  card.append(h4, p, devBar('話す高さ', Math.round(f0) + ' Hz', f0, ref));
+  const hold = results.hold;
+  if (hold) card.appendChild(devBar('息の長さ', hold.sustain.toFixed(1) + ' 秒', hold.sustain, ref.sustain));
+  return card;
+}
+function renderGender(m) {
+  const v = results.read || results.hold;
+  $('genderBlock').hidden = !v;
+  const box = $('genderCards'); box.textContent = '';
+  if (v) box.append(genderCard(VOICE_REF.male, v.f0, m), genderCard(VOICE_REF.female, v.f0, m));
+}
+function renderDataReport() {
+  const h = results.hold, r = results.read, gl = results.glide, voice = h || r, v = r || h;
+  $('typeName').textContent = '声の測定データ';
+  $('pitchLine').textContent = v ? '話す高さ ' + Math.round(v.f0) + ' Hz（' + noteName(v.f0) + '）' : noteName(gl.low) + ' から ' + noteName(gl.high);
+  $('warns').textContent = '';
+  $('specBlock').hidden = true;
+  $('ltasBlock').hidden = !voice;
+  if (voice) $('ltas').innerHTML = ltasSvg(voice);
+  renderNumbers();
+  $('result').hidden = false;
+}
+
 function renderReport() {
+  if (document.body.classList.contains('shared-data')) { renderDataReport(); return; }
   const h = results.hold, r = results.read, gl = results.glide;
   const voice = h || r;
   const m = mergeScores();
@@ -1246,6 +1399,9 @@ function renderReport() {
     dots.push([dot, val]);
   });
 
+  renderAverages();
+  renderBlur();
+  renderGender(m);
   renderSpecList();
   $('ltasBlock').hidden = !voice;
   if (voice) $('ltas').innerHTML = ltasSvg(voice);
@@ -1265,24 +1421,25 @@ function renderNumbers() {
     const tr = document.createElement('tr');
     const th = document.createElement('th'); th.colSpan = 2; th.scope = 'colgroup'; th.textContent = title;
     tr.appendChild(th); body.appendChild(tr);
-    rows.forEach(([k, note, v]) => {
+    rows.forEach(([k, note, v, state]) => {
       const row = document.createElement('tr');
       const a = document.createElement('th'); a.scope = 'row'; a.textContent = k;
       if (note) { const s = document.createElement('small'); s.textContent = note; a.appendChild(s); }
       const b = document.createElement('td'); b.textContent = v;
+      if (state) { const st = document.createElement('small'); st.textContent = state; b.appendChild(st); }
       row.append(a, b); body.appendChild(row);
     });
   };
   if (h) {
     const c = h.cycle, fm = h.formants;
     group('のばす声', [
-      ['のばせた時間', '目安は15秒前後', h.sustain.toFixed(1) + ' 秒'],
-      ['ジッター', '周期の長さのばらつき。目安は1%前後まで', c ? c.jitter.toFixed(2) + ' %' : '測定できず'],
-      ['シマー', '周期ごとの大きさのばらつき。目安は4%前後まで', c ? c.shimmer.toFixed(2) + ' %' : '測定できず'],
-      ['HNR', '声と雑音の比。大きいほどクリア', fmt(h.hnr) + ' dB'],
-      ['CPP', '声の周期のはっきり度。大きいほどクリア', fmt(h.cpp) + ' dB'],
+      ['のばせた時間', '平均は男性16秒前後、女性14秒前後', h.sustain.toFixed(1) + ' 秒'],
+      ['高さの細かいブレ', 'ジッター', c ? c.jitter.toFixed(2) + ' %' : '測定できず', c ? devWord(c.jitter, AVERAGE.jitter) : ''],
+      ['大きさの細かいブレ', 'シマー', c ? c.shimmer.toFixed(2) + ' %' : '測定できず', c ? devWord(c.shimmer, AVERAGE.shimmer) : ''],
+      ['声と雑音の比', 'HNR。大きいほどクリア', fmt(h.hnr) + ' dB', isNaN(h.hnr) ? '' : devWord(h.hnr, AVERAGE.hnr)],
+      ['声の輪郭のはっきり度', 'CPP。大きいほどクリア。アプリごとに値が違うため、同じ環境での比較向き', fmt(h.cpp) + ' dB'],
       ['ビブラート', '毎秒の回数と揺れ幅', h.vibrato ? h.vibrato.rate.toFixed(1) + ' 回 / ' + Math.round(h.vibrato.extent) + ' セント' : '検出なし'],
-      ['共鳴 F1 / F2 / F3', '「あ」の共鳴の山', fm ? [fm.f1, fm.f2, fm.f3].map(v => v ? Math.round(v) : '－').join(' / ') + ' Hz' : '測定できず'],
+      ['声の響きの山', 'フォルマントF1 / F2 / F3', fm ? [fm.f1, fm.f2, fm.f3].map(v => v ? Math.round(v) : '－').join(' / ') + ' Hz' : '測定できず'],
       ['声道の長さ', '共鳴の間隔からの推定で、体格の目安', (h.tract && h.f0 < 280) ? '約 ' + h.tract.toFixed(1) + ' cm' : '測定できず'],
       ['2〜4 kHzの強さ', '低い帯域のピークとの差。大きいほど通る', fmt(h.spr) + ' dB'],
       ['スペクトルの傾き', '緩やかなほど明るい', fmt(h.tilt) + ' dB/oct']
@@ -1293,7 +1450,7 @@ function renderNumbers() {
       ['話す高さ', '中央値', Math.round(r.f0) + ' Hz（' + noteName(r.f0) + '）'],
       ['高さの幅', '話している間の上下の幅', fmt(r.pitchSpan) + ' 半音'],
       ['抑揚', '高さのばらつき', fmt(r.intonation) + ' 半音'],
-      ['話す速さ', '間を除いて計算。目安は毎秒6〜8拍', r.scores.pace !== undefined ? '毎秒 ' + r.moraRate.toFixed(1) + ' 拍' : '測定できず'],
+      ['話す速さ', '間を除いて計算', r.moraRate >= 3 && r.moraRate <= 12 ? '毎秒 ' + r.moraRate.toFixed(1) + ' 拍' : '測定できず', r.moraRate >= 3 && r.moraRate <= 12 ? devWord(r.moraRate, AVERAGE.mora) : ''],
       ['間', '0.2秒以上の休み', r.pauses + ' 回（全体の ' + Math.round(r.pauseShare * 100) + '%）'],
       ['強弱の幅', '声の大きさの変化', fmt(r.dynamics) + ' dB']
     ]);
@@ -1303,7 +1460,7 @@ function renderNumbers() {
     group('音域', [
       ['一番低い音', '', noteName(gl.low) + '（' + Math.round(gl.low) + ' Hz）'],
       ['一番高い音', '', noteName(gl.high) + '（' + Math.round(gl.high) + ' Hz）'],
-      ['音域の広さ', '裏声を含む幅です', Math.round(gl.rangeSt) + ' 半音（' + (gl.rangeSt / 12).toFixed(1) + ' オクターブ）'],
+      ['音域の広さ', '裏声を含む幅です', Math.round(gl.rangeSt) + ' 半音（' + (gl.rangeSt / 12).toFixed(1) + ' オクターブ）', devWord(gl.rangeSt, AVERAGE.range)],
       ['高さが急に跳んだ位置', '地声と裏声の境目の候補', b.length ? b.join('、') : 'なし']
     ]);
   }
@@ -1367,7 +1524,7 @@ function ltasSvg(a) {
 // ---- 共有リンク ----
 // 測定値を数値のまま圧縮してリンクの#以降に入れる。サーバーなしで詳細レポートを再現するため
 const ARTIFACT_URL = 'https://claude.ai/artifact/G5L94hNQrLJ9Gi3YEdRAxA';
-const SHARE_VERSION = 1, NO_VALUE = 65535, OFFSET = 20000;
+const SHARE_VERSION = 2, NO_VALUE = 65535, OFFSET = 20000;
 const B32 = 'abcdefghijklmnopqrstuvwxyz234567';
 const SHARE_FIELDS = {
   hold: [['f0', 10], ['sustain', 10], ['hnr', 10], ['cpp', 10], ['spr', 10], ['tilt', 10],
@@ -1412,14 +1569,16 @@ function writePath(obj, path, value) {
   o[keys[keys.length - 1]] = value;
 }
 
-function encodeShare() {
-  const bytes = [SHARE_VERSION, 0];
+// 2バイト目は対象テスト、3バイト目は公開範囲（1はデータだけ）。データだけの場合は判定スコアを入れない
+function encodeShare(scope) {
+  const dataOnly = scope === 'data';
+  const bytes = [SHARE_VERSION, 0, dataOnly ? 1 : 0];
   ORDER.forEach((key, i) => {
     const res = results[key];
     if (!res) return;
     bytes[1] |= 1 << i;
     SHARE_FIELDS[key].forEach(([path, scale]) => {
-      const v = readPath(res, path);
+      const v = dataOnly && path.startsWith('scores.') ? undefined : readPath(res, path);
       const n = (typeof v === 'number' && isFinite(v))
         ? Math.min(NO_VALUE - 1, Math.max(0, Math.round(v * scale) + OFFSET)) : NO_VALUE;
       bytes.push(n >> 8, n & 255);
@@ -1437,11 +1596,12 @@ function encodeShare() {
 function decodeShare(hash) {
   if (!/^r-[a-z2-7]+$/.test(hash)) return null;
   const bytes = b32decode(hash.slice(2));
-  if (!bytes || bytes.length < 4 || bytes[0] !== SHARE_VERSION) return null;
+  if (!bytes || bytes.length < 4 || (bytes[0] !== 1 && bytes[0] !== SHARE_VERSION)) return null;
   const flags = bytes[1];
   if (!flags || flags > 7) return null;
   let at = 2;
   const out = {};
+  if (bytes[0] >= 2) { out.dataOnly = bytes[2] === 1; at = 3; }
   for (let i = 0; i < ORDER.length; i++) {
     if (!(flags & (1 << i))) continue;
     const key = ORDER[i], res = { mode: key, scores: {} };
@@ -1484,6 +1644,17 @@ function xWeight(text) {
 }
 const X_LIMIT = 280, X_LINK = 24;
 
+function buildDataText() {
+  const h = results.hold, r = results.read, gl = results.glide, v = r || h;
+  const lines = ['こえスペクトルで声を測定しました'];
+  if (v) lines.push('話す高さ：' + Math.round(v.f0) + ' Hz（' + noteName(v.f0) + '）');
+  if (h) lines.push('のばせた時間：' + h.sustain.toFixed(1) + '秒');
+  if (r && r.moraRate >= 3 && r.moraRate <= 12) lines.push('話す速さ：毎秒' + r.moraRate.toFixed(1) + '拍');
+  if (gl) lines.push('音域：' + noteName(gl.low) + '〜' + noteName(gl.high) + '（' + (gl.rangeSt / 12).toFixed(1) + 'オクターブ）');
+  lines.push('#こえスペクトル');
+  return lines.join('\n');
+}
+
 function buildShareText(typeName, style, findingsResult, title) {
   const h = results.hold, r = results.read, gl = results.glide, v = r || h;
   const head = '私の声は「' + title + '」でした';
@@ -1509,10 +1680,17 @@ function refreshShareLink() {
   $('shareX').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
 }
 
+let shareArgs = null;
 function prepareShare(typeName, style, findingsResult, title) {
+  shareArgs = [typeName, style, findingsResult, title];
+  applyShareScope();
+}
+function applyShareScope() {
+  if (!shareArgs) return;
+  const scope = document.querySelector('input[name="shareScope"]:checked').value;
   const box = $('shareText');
-  box.value = buildShareText(typeName, style, findingsResult, title);
-  box.dataset.url = shareBase() + '#' + encodeShare();
+  box.value = scope === 'data' ? buildDataText() : buildShareText(...shareArgs);
+  box.dataset.url = shareBase() + '#' + encodeShare(scope);
   refreshShareLink();
 }
 
@@ -1541,14 +1719,17 @@ function openSharedFromHash() {
     setStatus('この共有リンクは読み取れませんでした。リンクが途中で切れていないか確認してください。', true);
     return;
   }
+  const dataOnly = decoded.dataOnly;
+  delete decoded.dataOnly;
   results = decoded; warnings = {};
   document.body.classList.add('shared');
+  document.body.classList.toggle('shared-data', !!dataOnly);
   $('again').textContent = '自分の声も測る';
   renderReport();
   window.scrollTo({ top: 0 });
 }
 function leaveShared() {
-  document.body.classList.remove('shared');
+  document.body.classList.remove('shared', 'shared-data');
   $('again').textContent = '最初からやり直す';
   results = {}; warnings = {};
   $('result').hidden = true;
@@ -1622,6 +1803,7 @@ $('nextTest').addEventListener('click', () => {
   window.scrollTo({ top: 0 });
 });
 $('shareText').addEventListener('input', refreshShareLink);
+document.querySelectorAll('input[name="shareScope"]').forEach(el => el.addEventListener('change', applyShareScope));
 $('shareCopy').addEventListener('click', copyShare);
 $('mineTop').addEventListener('click', leaveShared);
 window.addEventListener('hashchange', openSharedFromHash);
